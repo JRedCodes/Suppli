@@ -4,11 +4,11 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 
 ## Phase 0 — Project Initialization
 - [x] 0.1 Repository Setup ✅
-- [ ] 0.2 GitHub Remote Setup
-- [ ] 0.3 Environment Configuration Template
+- [x] 0.2 GitHub Remote Setup ✅
+- [x] 0.3 Environment Configuration Template ✅
 
 ## Phase 1 — Project Scaffolding
-- [ ] 1.1 Backend Skeleton
+- [x] 1.1 Backend Skeleton ✅
 - [ ] 1.2 Frontend Skeleton
 - [ ] 1.3 Shared Tooling & Configuration
 
@@ -67,11 +67,12 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 ---
 
 ## Current Phase
-**Status:** Phase 0.1 Complete ✅ → Phase 0.2 Next
+**Status:** Phase 1.1 Complete ✅ → Phase 1.2 Next
 
 **Next Steps:**
-1. ✅ Phase 0.1 Complete: Repository initialized, structure created
-2. Proceed to Phase 0.2: GitHub Remote Setup
+1. ✅ Phase 0 Complete: Repository initialized and configured
+2. ✅ Phase 1.1 Complete: Backend skeleton created on `feature/backend-skeleton`
+3. Proceed to Phase 1.2: Frontend Skeleton
 
 ---
 
