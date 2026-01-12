@@ -9,7 +9,7 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 
 ## Phase 1 — Project Scaffolding
 - [x] 1.1 Backend Skeleton ✅
-- [ ] 1.2 Frontend Skeleton
+- [x] 1.2 Frontend Skeleton ✅
 - [ ] 1.3 Shared Tooling & Configuration
 
 ## Phase 2 — Database & Supabase Setup
@@ -67,12 +67,13 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 ---
 
 ## Current Phase
-**Status:** Phase 1.1 Complete ✅ → Phase 1.2 Next
+**Status:** Phase 1.2 Complete ✅ → Phase 1.3 Next
 
 **Next Steps:**
 1. ✅ Phase 0 Complete: Repository initialized and configured
-2. ✅ Phase 1.1 Complete: Backend skeleton created on `feature/backend-skeleton`
-3. Proceed to Phase 1.2: Frontend Skeleton
+2. ✅ Phase 1.1 Complete: Backend skeleton created
+3. ✅ Phase 1.2 Complete: Frontend skeleton created on `feature/frontend-skeleton`
+4. Proceed to Phase 1.3: Shared Tooling & Configuration
 
 ---
 
