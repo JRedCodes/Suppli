@@ -1,8 +1,21 @@
 import Stripe from 'stripe';
 import { config } from '../config';
 
+let stripeClient: Stripe | null = null;
+
 /**
- * Stripe client configured with the secret key from environment variables.
- * The API version defaults to your account setting to avoid hard-coding a preview version.
+ * Lazily instantiate and cache the Stripe client.
+ * Throws if the secret key is missing.
  */
-export const stripe = new Stripe(config.stripe.secretKey || '', {});
+export function getStripeClient(): Stripe {
+  if (stripeClient) {
+    return stripeClient;
+  }
+
+  if (!config.stripe.secretKey) {
+    throw new Error('Stripe secret key is not configured');
+  }
+
+  stripeClient = new Stripe(config.stripe.secretKey, {});
+  return stripeClient;
+}

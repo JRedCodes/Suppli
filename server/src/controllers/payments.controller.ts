@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { z } from 'zod';
-import { stripe } from '../lib/stripe';
+import { getStripeClient } from '../lib/stripe';
 import { config } from '../config';
 import { AuthRequest } from '../types/auth';
 
@@ -41,6 +41,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     }
 
     const authReq = req as AuthRequest;
+    const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
       mode: 'subscription',
@@ -85,6 +86,7 @@ export async function createBillingPortalSession(req: Request, res: Response): P
   const { sessionId, returnUrl } = parsed.data;
 
   try {
+    const stripe = getStripeClient();
     const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
     if (!checkoutSession.customer) {
       res.status(400).json({ error: { code: 'CUSTOMER_NOT_FOUND', message: 'No customer on session' } });
@@ -120,6 +122,7 @@ export async function handleStripeWebhook(req: Request, res: Response): Promise<
   }
 
   let event;
+  const stripe = getStripeClient();
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err: any) {
