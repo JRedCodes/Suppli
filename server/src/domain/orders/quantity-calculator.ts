@@ -106,6 +106,10 @@ function generateExplanation(
     if (context.activePromotion) {
       parts.push('due to active promotion');
     }
+
+    if (context.learningAdjustment && Math.abs(context.learningAdjustment) >= 0.5) {
+      parts.push('adjusted based on past approvals');
+    }
   }
 
   // Confidence note
@@ -125,11 +129,22 @@ export function calculateRecommendedQuantity(
 ): OrderLineRecommendation {
   // Calculate baseline
   const baseline = calculateBaselineQuantity(context);
-  const confidenceScore = calculateConfidenceScore(context);
+  let confidenceScore = calculateConfidenceScore(context);
+
+  // Apply learning-based confidence adjustment
+  if (context.confidenceAdjustment) {
+    confidenceScore = Math.max(0, Math.min(1, confidenceScore * context.confidenceAdjustment));
+  }
+
   const confidenceLevel = scoreToConfidenceLevel(confidenceScore);
 
   // Apply promotion uplift
   let quantity = applyPromotionUplift(baseline, context.activePromotion);
+
+  // Apply learning adjustment (quantity bias)
+  if (context.learningAdjustment) {
+    quantity += context.learningAdjustment;
+  }
 
   // Apply adjustment caps
   quantity = applyAdjustmentCaps(quantity, baseline, mode, confidenceScore, context.wasteSensitive);
@@ -144,6 +159,13 @@ export function calculateRecommendedQuantity(
   let adjustmentReason: string | undefined;
   if (context.activePromotion) {
     adjustmentReason = `Promotion uplift: ${context.activePromotion.uplift}`;
+  }
+  if (context.learningAdjustment && Math.abs(context.learningAdjustment) >= 0.5) {
+    const learningNote =
+      context.learningAdjustment > 0
+        ? `Learned adjustment: +${context.learningAdjustment.toFixed(1)}`
+        : `Learned adjustment: ${context.learningAdjustment.toFixed(1)}`;
+    adjustmentReason = adjustmentReason ? `${adjustmentReason}; ${learningNote}` : learningNote;
   }
 
   return {

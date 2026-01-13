@@ -240,12 +240,34 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
   // Fetch all product IDs
   const allProductIds = vendorProducts.map((vp) => (vp.products as any).id);
 
-  // Fetch supporting data in parallel
+  // Fetch supporting data in parallel (including learning adjustments)
+  const { getLearningAdjustment, calculateConfidenceAdjustment } =
+    await import('./learning.service');
+
   const [salesDataMap, previousOrdersMap, promotionsMap] = await Promise.all([
     fetchSalesData(businessId, allProductIds, orderPeriodStart, orderPeriodEnd),
     fetchPreviousOrders(businessId, allProductIds),
     fetchActivePromotions(businessId, allProductIds, orderPeriodStart, orderPeriodEnd),
   ]);
+
+  // Fetch learning adjustments for all products in parallel
+  const learningPromises = allProductIds.map((productId) =>
+    Promise.all([
+      getLearningAdjustment(businessId, productId),
+      calculateConfidenceAdjustment(businessId, productId),
+    ]).then(([learning, confidence]) => ({
+      productId,
+      learningAdjustment: learning !== 0 ? learning : undefined,
+      confidenceAdjustment: confidence !== 1.0 ? confidence : undefined,
+    }))
+  );
+
+  const learningMap = new Map(
+    (await Promise.all(learningPromises)).map((item) => [
+      item.productId,
+      { learning: item.learningAdjustment, confidence: item.confidenceAdjustment },
+    ])
+  );
 
   // Build product contexts and generate recommendations
   const vendorOrders: OrderGenerationResult['vendorOrders'] = [];
@@ -258,6 +280,9 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
       const product = vp.products as any;
       const productId = product.id;
 
+      // Get learning adjustments from map
+      const learningData = learningMap.get(productId);
+
       // Build product context
       const context: ProductContext = {
         productId,
@@ -267,6 +292,8 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
         salesData: salesDataMap.get(productId),
         previousOrder: previousOrdersMap.get(productId),
         activePromotion: promotionsMap.get(productId),
+        learningAdjustment: learningData?.learning,
+        confidenceAdjustment: learningData?.confidence,
       };
 
       // Calculate recommendation

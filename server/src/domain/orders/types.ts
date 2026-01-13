@@ -63,6 +63,8 @@ export interface ProductContext {
   salesData?: ProductSalesData;
   previousOrder?: PreviousOrderData;
   activePromotion?: PromotionData;
+  learningAdjustment?: number; // Quantity bias from learning loop
+  confidenceAdjustment?: number; // Confidence multiplier from approval history
 }
 
 /**

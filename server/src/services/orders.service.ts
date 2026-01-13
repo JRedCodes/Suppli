@@ -256,6 +256,18 @@ export async function updateOrderLineQuantity(
     },
   });
 
+  // Update learning from this edit
+  const { updateLearningFromEdit } = await import('./learning.service');
+  await updateLearningFromEdit(
+    businessId,
+    orderLine.product_id,
+    Number(beforeSnapshot.recommended_quantity),
+    finalQuantity
+  ).catch((err) => {
+    // Log but don't fail the update if learning fails
+    console.error('Failed to update learning from edit:', err);
+  });
+
   return updated;
 }
 
