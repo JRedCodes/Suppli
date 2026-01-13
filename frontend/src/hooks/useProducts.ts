@@ -158,9 +158,9 @@ export function useArchiveProduct() {
             const key = query.queryKey;
             // Match products list queries
             if (key[0] !== 'products' || key[1] !== 'list') return false;
-            // Only update queries that filter out archived products (archived: false)
+            // Only update queries that explicitly filter out archived products (archived: false)
             const filters = key[2] as ProductFilters | undefined;
-            return filters?.archived === false || filters === undefined;
+            return filters?.archived === false;
           },
         },
         (oldData: any) => {
@@ -192,8 +192,8 @@ export function useArchiveProduct() {
           const key = query.queryKey;
           if (key[0] !== 'products' || key[1] !== 'list') return false;
           const filters = key[2] as ProductFilters | undefined;
-          // Only invalidate queries that filter out archived products
-          return filters?.archived === false || filters === undefined;
+          // Only invalidate queries that explicitly filter out archived products
+          return filters?.archived === false;
         },
         refetchType: 'active', // Only refetch active queries
       });
