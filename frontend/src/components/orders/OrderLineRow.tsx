@@ -6,10 +6,11 @@ import type { OrderLine } from '../../services/orders.service';
 export interface OrderLineRowProps {
   line: OrderLine;
   onQuantityChange?: (lineId: string, quantity: number) => void;
+  onRemove?: (lineId: string) => void;
   disabled?: boolean;
 }
 
-export function OrderLineRow({ line, onQuantityChange, disabled }: OrderLineRowProps) {
+export function OrderLineRow({ line, onQuantityChange, onRemove, disabled }: OrderLineRowProps) {
   const [editingQuantity, setEditingQuantity] = useState(false);
   const [quantity, setQuantity] = useState(line.final_quantity.toString());
 
@@ -137,6 +138,18 @@ export function OrderLineRow({ line, onQuantityChange, disabled }: OrderLineRowP
           {line.explanation || 'No explanation available'}
         </div>
       </td>
+      {onRemove && (
+        <td className="px-6 py-4 whitespace-nowrap">
+          <button
+            onClick={() => onRemove(line.id)}
+            disabled={disabled}
+            className="text-xs text-red-600 hover:text-red-700 font-medium focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-2 py-1"
+            title="Remove product from order"
+          >
+            Remove
+          </button>
+        </td>
+      )}
     </tr>
   );
 }

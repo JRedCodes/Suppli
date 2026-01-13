@@ -149,10 +149,57 @@ export async function approveOrderHandler(req: Request, res: Response): Promise<
  * Send order
  * POST /api/v1/orders/:id/send
  */
-export async function sendOrderHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+export async function sendOrderHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-  const order = await sendOrder(authReq.businessId!, id, authReq.userId!);
-  sendSuccess(res, order);
+    const order = await sendOrder(authReq.businessId!, id, authReq.userId!);
+    sendSuccess(res, order);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Add order line
+ * POST /api/v1/orders/:id/lines
+ */
+export async function addOrderLineHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { vendorOrderId, productId, productName, quantity, unitType } = req.body;
+
+    const newLine = await addOrderLine(
+      authReq.businessId!,
+      id,
+      vendorOrderId,
+      productId || null,
+      productName,
+      quantity,
+      unitType || 'unit',
+      authReq.userId!
+    );
+    sendSuccess(res, newLine, 201);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Remove order line
+ * DELETE /api/v1/orders/:id/lines/:lineId
+ */
+export async function removeOrderLineHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
+
+    await removeOrderLine(authReq.businessId!, id, lineId, authReq.userId!);
+    sendSuccess(res, null, 204);
+  } catch (error) {
+    next(error);
+  }
 }

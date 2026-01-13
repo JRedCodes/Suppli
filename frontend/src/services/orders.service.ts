@@ -2,7 +2,7 @@
  * Orders service - API calls for orders
  */
 
-import { apiGet, apiPost, apiPatch, RequestOptions } from '../lib/api-client';
+import { apiGet, apiPost, apiPatch, apiDelete, RequestOptions } from '../lib/api-client';
 
 export interface Order {
   id: string;
@@ -82,6 +82,14 @@ export interface UpdateOrderLineRequest {
   finalQuantity: number;
 }
 
+export interface AddOrderLineRequest {
+  vendorOrderId: string;
+  productId?: string | null; // null if creating new product
+  productName: string; // Required if productId is null
+  quantity: number;
+  unitType?: 'case' | 'unit';
+}
+
 export const ordersService = {
   /**
    * Generate a new order
@@ -144,5 +152,23 @@ export const ordersService = {
    */
   send: async (orderId: string, options: RequestOptions): Promise<Order> => {
     return apiPost<Order>(`/orders/${orderId}/send`, {}, options);
+  },
+
+  /**
+   * Add order line
+   */
+  addLine: async (
+    orderId: string,
+    data: AddOrderLineRequest,
+    options: RequestOptions
+  ): Promise<OrderLine> => {
+    return apiPost<OrderLine>(`/orders/${orderId}/lines`, data, options);
+  },
+
+  /**
+   * Remove order line
+   */
+  removeLine: async (orderId: string, lineId: string, options: RequestOptions): Promise<void> => {
+    return apiDelete<void>(`/orders/${orderId}/lines/${lineId}`, options);
   },
 };
