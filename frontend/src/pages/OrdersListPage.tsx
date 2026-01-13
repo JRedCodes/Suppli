@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOrders } from '../hooks/useOrders';
+import { useVendors } from '../hooks/useVendors';
 import { Table, type TableColumn } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Loading } from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Alert } from '../components/ui/Alert';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import type { Order } from '../services/orders.service';
 
@@ -15,6 +17,9 @@ export default function OrdersListPage() {
 
   const filters = statusFilter !== 'all' ? { status: statusFilter } : {};
   const { data, isLoading, error } = useOrders(filters);
+  const { data: vendorsData, isLoading: vendorsLoading } = useVendors();
+  const vendors = vendorsData?.data || [];
+  const hasVendors = vendors.length > 0;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -63,12 +68,28 @@ export default function OrdersListPage() {
     );
   }
 
-  if (error) {
+  // Check if error is due to no vendors
+  const isNoVendorsError = error && !hasVendors && !vendorsLoading;
+
+  if (isNoVendorsError) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <p className="text-red-800">Failed to load orders. Please try again.</p>
-        </div>
+        <Alert variant="warning" title="No Vendors Added">
+          <p className="mb-4">
+            You need to add at least one vendor before you can generate orders. Add your first vendor to get started.
+          </p>
+          <Button onClick={() => navigate('/vendors')}>Add Your First Vendor</Button>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (error && !isNoVendorsError) {
+    return (
+      <div className="p-6">
+        <Alert variant="error" title="Error">
+          Failed to load orders. Please try again.
+        </Alert>
       </div>
     );
   }
@@ -82,7 +103,9 @@ export default function OrdersListPage() {
           <h1 className="text-2xl font-semibold text-gray-900">Orders</h1>
           <p className="text-sm text-gray-600 mt-1">Manage and review your orders</p>
         </div>
-        <Button onClick={() => navigate('/orders/generate')}>Generate New Order</Button>
+        <Button onClick={() => navigate('/orders/generate')} disabled={!hasVendors}>
+          Generate New Order
+        </Button>
       </div>
 
       {/* Filters */}
@@ -116,7 +139,11 @@ export default function OrdersListPage() {
           }
           action={
             statusFilter === 'all' ? (
-              <Button onClick={() => navigate('/orders/generate')}>Generate Your First Order</Button>
+              hasVendors ? (
+                <Button onClick={() => navigate('/orders/generate')}>Generate Your First Order</Button>
+              ) : (
+                <Button onClick={() => navigate('/vendors')}>Add Your First Vendor</Button>
+              )
             ) : (
               <Button variant="secondary" onClick={() => setStatusFilter('all')}>
                 Show All Orders

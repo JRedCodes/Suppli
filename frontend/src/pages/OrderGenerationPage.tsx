@@ -177,7 +177,12 @@ export default function OrderGenerationPage() {
           <Button variant="secondary" onClick={() => navigate('/orders')} disabled={generateOrder.isPending}>
             Cancel
           </Button>
-          <Button type="submit" disabled={generateOrder.isPending || vendors.length === 0} loading={generateOrder.isPending}>
+          <Button
+            type="submit"
+            disabled={generateOrder.isPending || vendors.length === 0}
+            loading={generateOrder.isPending}
+            title={vendors.length === 0 ? 'Add at least one vendor to generate orders' : ''}
+          >
             Generate Order
           </Button>
         </div>
