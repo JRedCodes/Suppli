@@ -46,8 +46,14 @@ export default function ProductsListPage() {
     try {
       await archiveProduct.mutateAsync(archiveTarget.id);
       setArchiveTarget(null);
-    } catch (error) {
+      // Force a refetch after a short delay to ensure UI updates
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error: any) {
       console.error('Failed to archive product:', error);
+      // Show error to user
+      alert(`Failed to archive product: ${error?.message || 'Unknown error'}`);
     }
   };
 

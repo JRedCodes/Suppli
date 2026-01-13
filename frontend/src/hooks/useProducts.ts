@@ -147,9 +147,10 @@ export function useArchiveProduct() {
       });
     },
     onSuccess: (data, productId) => {
+      console.log('Archive product success:', { productId, archivedProduct: data });
       // Update the detail query
       queryClient.setQueryData(productKeys.detail(productId), data);
-      // Remove the archived product from all list queries
+      // Optimistically remove the archived product from all list queries
       queryClient.setQueriesData(
         {
           predicate: (query) => {
@@ -158,10 +159,19 @@ export function useArchiveProduct() {
           },
         },
         (oldData: any) => {
-          if (!oldData || !oldData.data) return oldData;
+          if (!oldData || !oldData.data) {
+            console.log('No oldData to update');
+            return oldData;
+          }
+          const filtered = oldData.data.filter((p: Product) => p.id !== productId);
+          console.log('Filtering archived product from cache:', {
+            beforeCount: oldData.data.length,
+            afterCount: filtered.length,
+            productId,
+          });
           return {
             ...oldData,
-            data: oldData.data.filter((p: Product) => p.id !== productId),
+            data: filtered,
             meta: {
               ...oldData.meta,
               total: Math.max(0, (oldData.meta?.total || 0) - 1),
