@@ -30,7 +30,7 @@ export async function listProducts(
   // If archived === false, explicitly show only non-archived
   // If archived === true, show only archived
   // Handle both boolean and string values (in case validation didn't convert)
-  const archivedFilter = filters.archived;
+  const archivedFilter: boolean | string | undefined = filters.archived as boolean | string | undefined;
   // Type guard to handle both boolean and string values
   const isArchivedFalse =
     archivedFilter === false ||
