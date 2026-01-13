@@ -148,15 +148,28 @@ export function useArchiveProduct() {
     onSuccess: (data, productId) => {
       // Update the detail query
       queryClient.setQueryData(productKeys.detail(productId), data);
-      // Invalidate all product list queries to refetch
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return key[0] === 'products' && key[1] === 'list';
+      // Remove the archived product from all list queries
+      queryClient.setQueriesData(
+        {
+          predicate: (query) => {
+            const key = query.queryKey;
+            return key[0] === 'products' && key[1] === 'list';
+          },
         },
-      });
-      // Also refetch immediately to ensure UI updates
-      queryClient.refetchQueries({
+        (oldData: any) => {
+          if (!oldData || !oldData.data) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.filter((p: Product) => p.id !== productId),
+            meta: {
+              ...oldData.meta,
+              total: Math.max(0, (oldData.meta?.total || 0) - 1),
+            },
+          };
+        }
+      );
+      // Invalidate and refetch to ensure consistency
+      queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey;
           return key[0] === 'products' && key[1] === 'list';
