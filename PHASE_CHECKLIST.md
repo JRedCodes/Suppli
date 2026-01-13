@@ -23,7 +23,7 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 - [x] 3.2 API Contracts & Validation ✅
 - [x] 3.3 Orders Domain Logic ✅
 - [x] 3.4 Orders API Endpoints ✅
-- [ ] 3.5 Vendors API
+- [x] 3.5 Vendors API ✅
 - [ ] 3.6 Learning Loop Implementation
 
 ## Phase 4 — Configuration & External Services
@@ -67,7 +67,7 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 ---
 
 ## Current Phase
-**Status:** Phase 3.4 Complete ✅ → Phase 3.5 Next
+**Status:** Phase 3.5 Complete ✅ → Phase 3.6 Next
 
 **Next Steps:**
 1. ✅ Phase 0 Complete: Repository initialized and configured
@@ -77,7 +77,8 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 5. ✅ Phase 3.2 Complete: API Contracts & Validation implemented
 6. ✅ Phase 3.3 Complete: Orders Domain Logic implemented
 7. ✅ Phase 3.4 Complete: Orders API Endpoints implemented
-8. Proceed to Phase 3.5: Vendors API
+8. ✅ Phase 3.5 Complete: Vendors API implemented
+9. Proceed to Phase 3.6: Learning Loop Implementation
 
 ---
 
