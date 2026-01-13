@@ -62,6 +62,15 @@ export async function apiRequest<T>(
     const data = await response.json();
 
     if (!response.ok) {
+      // Handle 401 Unauthorized specifically
+      if (response.status === 401) {
+        throw new ApiClientError(
+          'Authentication failed. Please sign in again.',
+          'UNAUTHORIZED',
+          401
+        );
+      }
+
       const error = data.error || { code: 'UNKNOWN_ERROR', message: 'An error occurred' };
       throw new ApiClientError(error.message, error.code, response.status);
     }
