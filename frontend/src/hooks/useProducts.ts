@@ -78,8 +78,13 @@ export function useCreateProduct() {
       });
     },
     onSuccess: () => {
-      // Invalidate all product list queries (regardless of filters or businessId)
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      // Invalidate all product list queries - use predicate to match all queries starting with ['products', 'list']
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === 'products' && key[1] === 'list';
+        },
+      });
     },
   });
 }
