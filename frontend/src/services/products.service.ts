@@ -6,6 +6,7 @@ export interface Product {
   name: string;
   category?: string;
   waste_sensitive: boolean;
+  max_stock_amount?: number | null;
   archived_at?: string;
   created_at: string;
   updated_at: string;
@@ -15,12 +16,14 @@ export interface CreateProductRequest {
   name: string;
   category?: string;
   waste_sensitive?: boolean;
+  max_stock_amount?: number | null;
 }
 
 export interface UpdateProductRequest {
   name?: string;
   category?: string;
   waste_sensitive?: boolean;
+  max_stock_amount?: number | null;
 }
 
 export interface ProductFilters {

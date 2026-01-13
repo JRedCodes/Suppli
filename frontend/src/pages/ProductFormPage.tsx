@@ -15,6 +15,15 @@ const productSchema = z.object({
   name: z.string().min(1, 'Product name is required'),
   category: z.string().optional().or(z.literal('')),
   waste_sensitive: z.boolean().default(false),
+  max_stock_amount: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (!val || val === '') return null;
+      const num = parseFloat(val);
+      return isNaN(num) || num <= 0 ? null : num;
+    })
+    .pipe(z.number().positive().nullable().optional()),
   vendor_id: z.string().uuid().optional().or(z.literal('')),
   unit_type: z.enum(['case', 'unit']).optional(),
   sku: z.string().optional().or(z.literal('')),
@@ -46,6 +55,7 @@ export default function ProductFormPage() {
       name: '',
       category: '',
       waste_sensitive: false,
+      max_stock_amount: '',
       vendor_id: '',
       unit_type: 'unit',
       sku: '',
@@ -58,6 +68,7 @@ export default function ProductFormPage() {
         name: productData.name,
         category: productData.category || '',
         waste_sensitive: productData.waste_sensitive,
+        max_stock_amount: productData.max_stock_amount?.toString() || '',
       });
     }
   }, [isEditMode, productData, reset]);
@@ -66,13 +77,22 @@ export default function ProductFormPage() {
     setFormError(null);
     try {
       if (isEditMode && productId) {
-        await updateProduct.mutateAsync({ productId, data: data as UpdateProductRequest });
+        await updateProduct.mutateAsync({
+          productId,
+          data: {
+            name: data.name,
+            category: data.category,
+            waste_sensitive: data.waste_sensitive,
+            max_stock_amount: data.max_stock_amount || null,
+          } as UpdateProductRequest,
+        });
       } else {
         // Create the product
         const product = await createProduct.mutateAsync({
           name: data.name,
           category: data.category,
           waste_sensitive: data.waste_sensitive,
+          max_stock_amount: data.max_stock_amount || null,
         } as CreateProductRequest);
 
         // If a vendor is selected, link the product to the vendor
@@ -155,6 +175,21 @@ export default function ProductFormPage() {
           {errors.waste_sensitive && (
             <p className="mt-2 text-sm text-red-600">{errors.waste_sensitive.message}</p>
           )}
+        </div>
+
+        <div>
+          <Input
+            label="Max Stock Amount (Optional)"
+            type="number"
+            step="0.01"
+            min="0"
+            {...register('max_stock_amount')}
+            error={errors.max_stock_amount?.message}
+            placeholder="e.g., 100"
+          />
+          <p className="mt-1 text-sm text-gray-500">
+            Set an upper limit safeguard for order quantities. If set, order generation will cap quantities at this value.
+          </p>
         </div>
 
         {!isEditMode && (
