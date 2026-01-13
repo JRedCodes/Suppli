@@ -8,7 +8,8 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
     },
-    envPrefix: ['VITE_', 'SUPABASE_'], // Only load specific env vars
+    // Prevent Vite from loading .env files during tests
+    envPrefix: [],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -27,4 +28,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // Disable env file loading in test mode
+  envDir: undefined,
 });
