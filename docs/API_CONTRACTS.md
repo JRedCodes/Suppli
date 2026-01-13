@@ -618,10 +618,100 @@ cancelled            cancelled
 
 ---
 
+## Payments API
+
+### Create Checkout Session
+
+**POST** `/api/v1/payments/checkout-session`
+
+Creates a Stripe Checkout session for subscription signup.
+
+**Authentication:** Required (JWT token)
+
+**Request Body:**
+```json
+{
+  "lookupKey": "starter-plan",
+  "successUrl": "http://localhost:5173/payment-success",
+  "cancelUrl": "http://localhost:5173/payment-cancelled",
+  "customerEmail": "customer@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://checkout.stripe.com/c/pay/cs_test_..."
+}
+```
+
+**Errors:**
+- `400 INVALID_INPUT` - Invalid request body
+- `400 PRICE_NOT_FOUND` - Price lookup key not found
+- `500 CHECKOUT_SESSION_ERROR` - Failed to create checkout session
+
+### Create Billing Portal Session
+
+**POST** `/api/v1/payments/billing-portal`
+
+Creates a Stripe Billing Portal session for managing subscriptions.
+
+**Authentication:** Required (JWT token)
+
+**Request Body:**
+```json
+{
+  "sessionId": "cs_test_...",
+  "returnUrl": "http://localhost:5173/settings"
+}
+```
+
+**Response:**
+```json
+{
+  "url": "https://billing.stripe.com/p/session/..."
+}
+```
+
+**Errors:**
+- `400 INVALID_INPUT` - Invalid request body
+- `400 CUSTOMER_NOT_FOUND` - No customer on checkout session
+- `500 PORTAL_SESSION_ERROR` - Failed to create portal session
+
+### Webhook Endpoint
+
+**POST** `/api/v1/webhooks/stripe`
+
+Handles Stripe webhook events. Uses raw body for signature verification.
+
+**Authentication:** None (uses Stripe signature verification)
+
+**Webhook Events:**
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `customer.subscription.trial_will_end`
+
+**Response:**
+```json
+{
+  "received": true
+}
+```
+
+**Errors:**
+- `400` - Missing or invalid Stripe signature
+- `500` - Webhook secret not configured
+
+See `docs/STRIPE_INTEGRATION.md` for detailed Stripe integration documentation.
+
+---
+
 ## Next Steps
 
 - See `docs/AUTHENTICATION.md` for authentication details
 - See `docs/ORDER_GENERATION.md` for order generation algorithm
+- See `docs/STRIPE_INTEGRATION.md` for Stripe integration details
 - See `server/src/validators/` for available validation schemas
 - See `server/src/middleware/validation.ts` for validation middleware
 - See `server/src/lib/response.ts` for response utilities
