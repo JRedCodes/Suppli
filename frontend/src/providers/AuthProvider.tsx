@@ -8,6 +8,7 @@ interface AuthContextValue {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string) => Promise<{ error?: string; success?: boolean; message?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -53,6 +54,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {};
   };
 
+  const signUp = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+      },
+    });
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Check if email confirmation is required
+    if (data.user && !data.session) {
+      return {
+        success: true,
+        message: 'Please check your email to confirm your account before signing in.',
+      };
+    }
+
+    return { success: true };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -63,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       session,
       loading,
       signIn,
+      signUp,
       signOut,
     }),
     [user, session, loading]
