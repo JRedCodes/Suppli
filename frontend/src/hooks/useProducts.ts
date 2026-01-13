@@ -107,7 +107,12 @@ export function useUpdateProduct() {
     },
     onSuccess: (data, variables) => {
       queryClient.setQueryData(productKeys.detail(variables.productId), data);
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === 'products' && key[1] === 'list';
+        },
+      });
     },
   });
 }
@@ -130,7 +135,12 @@ export function useArchiveProduct() {
     },
     onSuccess: (data, productId) => {
       queryClient.setQueryData(productKeys.detail(productId), data);
-      queryClient.invalidateQueries({ queryKey: productKeys.lists() });
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === 'products' && key[1] === 'list';
+        },
+      });
     },
   });
 }
