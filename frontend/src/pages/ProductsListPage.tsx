@@ -133,10 +133,11 @@ export default function ProductsListPage() {
   const products = data?.data || [];
 
   // Debug logging
+  const errorMessage = error ? (error as Error).message || String(error) : undefined;
   console.log('ProductsListPage render:', {
     isLoading,
     hasError: !!error,
-    errorMessage: error instanceof Error ? error.message : String(error),
+    errorMessage,
     hasData: !!data,
     dataType: typeof data,
     productsCount: products.length,
