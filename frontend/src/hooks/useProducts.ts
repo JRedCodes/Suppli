@@ -152,6 +152,22 @@ export function useArchiveProduct() {
       queryClient.setQueryData(productKeys.detail(productId), data);
       
       // Remove the archived product from all list queries (only for queries with archived: false)
+      // First, let's find all matching queries to debug
+      const matchingQueries = queryClient.getQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === 'products' && key[1] === 'list';
+        },
+      });
+      console.log('All products list queries found:', {
+        count: matchingQueries.length,
+        queries: matchingQueries.map((q) => ({
+          key: q.queryKey,
+          state: q.state.status,
+          data: q.state.data,
+        })),
+      });
+
       queryClient.setQueriesData(
         {
           predicate: (query) => {
@@ -166,24 +182,37 @@ export function useArchiveProduct() {
               keyLength: key.length,
               keyStructure: key,
               filters,
+              filtersType: typeof filters,
+              archivedValue: filters?.archived,
               shouldUpdate,
             });
             return shouldUpdate;
           },
         },
         (oldData: any) => {
+          console.log('Cache updater called with oldData:', {
+            hasOldData: !!oldData,
+            oldDataType: typeof oldData,
+            oldDataKeys: oldData ? Object.keys(oldData) : [],
+            hasData: !!oldData?.data,
+            dataType: Array.isArray(oldData?.data) ? 'array' : typeof oldData?.data,
+            dataLength: Array.isArray(oldData?.data) ? oldData.data.length : 'N/A',
+          });
+          
           if (!oldData || !oldData.data) {
-            console.log('No oldData to update - query structure:', oldData);
+            console.log('No oldData to update - returning as-is');
             return oldData;
           }
+          
           const filtered = oldData.data.filter((p: Product) => p.id !== productId);
           console.log('Filtering archived product from cache:', {
             beforeCount: oldData.data.length,
             afterCount: filtered.length,
             productId,
-            oldDataKeys: Object.keys(oldData),
+            removed: oldData.data.length - filtered.length,
           });
-          return {
+          
+          const updated = {
             ...oldData,
             data: filtered,
             meta: {
@@ -191,6 +220,13 @@ export function useArchiveProduct() {
               total: Math.max(0, (oldData.meta?.total || 0) - 1),
             },
           };
+          
+          console.log('Returning updated cache data:', {
+            dataCount: updated.data.length,
+            metaTotal: updated.meta.total,
+          });
+          
+          return updated;
         }
       );
       
