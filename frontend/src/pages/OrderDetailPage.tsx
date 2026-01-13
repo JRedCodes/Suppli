@@ -406,6 +406,7 @@ export default function OrderDetailPage() {
                 {!addProductForm.useExisting && (
                   <Input
                     type="text"
+                    id="add-product-name"
                     label="Product Name"
                     value={addProductForm.productName}
                     onChange={(e) => setAddProductForm({ ...addProductForm, productName: e.target.value })}
