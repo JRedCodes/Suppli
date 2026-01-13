@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useVendors, useArchiveVendor } from '../hooks/useVendors';
+import { useAuth } from '../hooks/useAuth';
 import { Table, type TableColumn } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Loading } from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
+import { Alert } from '../components/ui/Alert';
 import { Modal, ModalFooter } from '../components/ui/Modal';
 import type { Vendor } from '../services/vendors.service';
 
@@ -18,9 +20,29 @@ const orderingMethodLabels: Record<Vendor['ordering_method'], string> = {
 
 export default function VendorsListPage() {
   const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
   const { data, isLoading, error } = useVendors({ archived: false });
   const archiveVendor = useArchiveVendor();
   const [archiveTarget, setArchiveTarget] = useState<Vendor | null>(null);
+
+  // Check if user is authenticated
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Loading size="lg" text="Loading..." />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="p-6">
+        <Alert variant="error" title="Authentication Required">
+          Please sign in to view vendors.
+        </Alert>
+      </div>
+    );
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

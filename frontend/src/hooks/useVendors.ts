@@ -32,12 +32,16 @@ export function useVendors(filters: VendorFilters = {}) {
 
   return useQuery({
     queryKey: [...vendorKeys.list(filters), selectedBusinessId],
-    queryFn: () =>
-      vendorsService.list(filters, {
+    queryFn: () => {
+      if (!session?.access_token) {
+        throw new Error('No authentication token available');
+      }
+      return vendorsService.list(filters, {
         businessId: selectedBusinessId,
-        token: session?.access_token,
-      }),
-    enabled: !!selectedBusinessId && !!session,
+        token: session.access_token,
+      });
+    },
+    enabled: !!selectedBusinessId && !!session?.access_token,
   });
 }
 
