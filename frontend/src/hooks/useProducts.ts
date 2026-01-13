@@ -78,6 +78,7 @@ export function useCreateProduct() {
       });
     },
     onSuccess: () => {
+      // Invalidate all product list queries (regardless of filters or businessId)
       queryClient.invalidateQueries({ queryKey: productKeys.lists() });
     },
   });
