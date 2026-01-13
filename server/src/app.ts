@@ -7,6 +7,7 @@ import { verifyJWT, resolveBusinessContext, requireManager, validateBody } from 
 import { AuthRequest } from './types/auth';
 import { sendSuccess } from './lib/response';
 import ordersRoutes from './routes/orders.routes';
+import vendorsRoutes from './routes/vendors.routes';
 
 /**
  * Creates and configures the Express application
@@ -57,6 +58,9 @@ export function createApp(): Express {
 
   // Orders routes
   app.use('/api/v1/orders', ordersRoutes);
+
+  // Vendors routes
+  app.use('/api/v1/vendors', vendorsRoutes);
 
   // Protected test endpoint (for testing auth middleware)
   app.get(

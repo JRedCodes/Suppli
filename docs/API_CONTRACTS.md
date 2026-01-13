@@ -618,6 +618,172 @@ cancelled            cancelled
 
 ---
 
+## Vendors API Endpoints
+
+### Create Vendor
+
+**POST** `/api/v1/vendors`
+
+Create a new vendor.
+
+**Authentication:** Required (Manager or Owner)
+
+**Request Body:**
+```json
+{
+  "name": "Vendor Name",
+  "ordering_method": "email",
+  "contact_email": "vendor@example.com",
+  "contact_phone": "+1234567890",
+  "portal_url": "https://vendor-portal.com"
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "business_id": "uuid",
+    "name": "Vendor Name",
+    "ordering_method": "email",
+    "contact_email": "vendor@example.com",
+    "contact_phone": "+1234567890",
+    "portal_url": "https://vendor-portal.com",
+    "created_at": "2026-01-01T00:00:00Z",
+    "archived_at": null
+  }
+}
+```
+
+**Errors:**
+- `409 CONFLICT` - Vendor with this name already exists
+
+---
+
+### List Vendors
+
+**GET** `/api/v1/vendors`
+
+List vendors with optional filters and pagination.
+
+**Authentication:** Required (Staff, Manager, or Owner)
+
+**Query Parameters:**
+- `includeArchived` (optional): Include archived vendors (default: false)
+- `page` (optional): Page number (default: 1)
+- `pageSize` (optional): Items per page (default: 25, max: 100)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Vendor Name",
+      "ordering_method": "email",
+      "contact_email": "vendor@example.com",
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 25,
+    "total": 50,
+    "totalPages": 2
+  }
+}
+```
+
+---
+
+### Get Vendor by ID
+
+**GET** `/api/v1/vendors/:id`
+
+Get detailed information about a specific vendor.
+
+**Authentication:** Required (Staff, Manager, or Owner)
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "business_id": "uuid",
+    "name": "Vendor Name",
+    "ordering_method": "email",
+    "contact_email": "vendor@example.com",
+    "contact_phone": "+1234567890",
+    "portal_url": "https://vendor-portal.com",
+    "created_at": "2026-01-01T00:00:00Z",
+    "archived_at": null
+  }
+}
+```
+
+---
+
+### Update Vendor
+
+**PATCH** `/api/v1/vendors/:id`
+
+Update vendor information. All fields are optional.
+
+**Authentication:** Required (Manager or Owner)
+
+**Request Body:**
+```json
+{
+  "name": "Updated Vendor Name",
+  "ordering_method": "phone",
+  "contact_email": "new-email@example.com"
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "name": "Updated Vendor Name",
+    "ordering_method": "phone",
+    "contact_email": "new-email@example.com"
+  }
+}
+```
+
+**Errors:**
+- `404 NOT_FOUND` - Vendor not found
+- `409 CONFLICT` - Vendor with this name already exists
+
+---
+
+### Archive Vendor
+
+**DELETE** `/api/v1/vendors/:id`
+
+Archive (soft delete) a vendor. Vendors with active orders cannot be archived.
+
+**Authentication:** Required (Manager or Owner)
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "name": "Vendor Name",
+    "archived_at": "2026-01-01T12:00:00Z"
+  }
+}
+```
+
+**Errors:**
+- `404 NOT_FOUND` - Vendor not found
+- `409 CONFLICT` - Vendor has active orders
+
+---
+
 ## Next Steps
 
 - See `docs/AUTHENTICATION.md` for authentication details
