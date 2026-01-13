@@ -58,10 +58,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
     if (error) {
-      return { error: error.message };
+      // Provide more helpful error messages
+      let errorMessage = error.message;
+      
+      if (error.message.includes('Invalid login credentials')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = 'Please confirm your email address before signing in. Check your inbox for the confirmation link.';
+      } else if (error.message.includes('Email rate limit exceeded')) {
+        errorMessage = 'Too many sign-in attempts. Please wait a few minutes and try again.';
+      }
+      
+      return { error: errorMessage };
     }
+    
+    // If successful, the session should be set automatically via onAuthStateChange
+    // But we can verify it here
+    if (data.session) {
+      setSession(data.session);
+      setUser(data.session.user);
+    }
+    
     return {};
   };
 

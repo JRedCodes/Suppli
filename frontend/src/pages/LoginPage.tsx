@@ -32,6 +32,11 @@ export default function LoginPage() {
       const result = await signIn(email, password);
       if (result.error) {
         setError(result.error);
+      } else {
+        // Sign-in successful - ProtectedRoute will handle redirect
+        // Clear form
+        setEmail('');
+        setPassword('');
       }
     }
 
