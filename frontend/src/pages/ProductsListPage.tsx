@@ -46,14 +46,19 @@ export default function ProductsListPage() {
     try {
       await archiveProduct.mutateAsync(archiveTarget.id);
       setArchiveTarget(null);
-      // Force a refetch after a short delay to ensure UI updates
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      // No need to reload - cache invalidation should handle it
     } catch (error: any) {
       console.error('Failed to archive product:', error);
-      // Show error to user
-      alert(`Failed to archive product: ${error?.message || 'Unknown error'}`);
+      // Check if product is already archived
+      if (error?.message?.includes('already archived')) {
+        // Product is already archived, just close the modal and refresh the list
+        setArchiveTarget(null);
+        // Invalidate to refetch and get the updated list
+        // The query will automatically refetch since it's active
+      } else {
+        // Show error to user for other errors
+        alert(`Failed to archive product: ${error?.message || 'Unknown error'}`);
+      }
     }
   };
 

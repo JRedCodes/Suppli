@@ -150,12 +150,17 @@ export function useArchiveProduct() {
       console.log('Archive product success:', { productId, archivedProduct: data });
       // Update the detail query
       queryClient.setQueryData(productKeys.detail(productId), data);
-      // Optimistically remove the archived product from all list queries
+      
+      // Remove the archived product from all list queries (only for queries with archived: false)
       queryClient.setQueriesData(
         {
           predicate: (query) => {
             const key = query.queryKey;
-            return key[0] === 'products' && key[1] === 'list';
+            // Match products list queries
+            if (key[0] !== 'products' || key[1] !== 'list') return false;
+            // Only update queries that filter out archived products (archived: false)
+            const filters = key[2] as ProductFilters | undefined;
+            return filters?.archived === false || filters === undefined;
           },
         },
         (oldData: any) => {
@@ -179,12 +184,18 @@ export function useArchiveProduct() {
           };
         }
       );
-      // Invalidate and refetch to ensure consistency
+      
+      // Only invalidate queries that should show non-archived products
+      // This ensures the refetch respects the archived: false filter
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey;
-          return key[0] === 'products' && key[1] === 'list';
+          if (key[0] !== 'products' || key[1] !== 'list') return false;
+          const filters = key[2] as ProductFilters | undefined;
+          // Only invalidate queries that filter out archived products
+          return filters?.archived === false || filters === undefined;
         },
+        refetchType: 'active', // Only refetch active queries
       });
     },
   });
