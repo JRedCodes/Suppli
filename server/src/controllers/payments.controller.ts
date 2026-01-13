@@ -29,6 +29,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
   const { lookupKey, successUrl, cancelUrl, customerEmail } = parsed.data;
 
   try {
+    const stripe = getStripeClient();
     const prices = await stripe.prices.list({
       lookup_keys: [lookupKey],
       expand: ['data.product'],
@@ -41,7 +42,6 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     }
 
     const authReq = req as AuthRequest;
-    const stripe = getStripeClient();
     const session = await stripe.checkout.sessions.create({
       billing_address_collection: 'auto',
       mode: 'subscription',
