@@ -157,15 +157,23 @@ export function useArchiveProduct() {
           predicate: (query) => {
             const key = query.queryKey;
             // Match products list queries
+            // Query key structure: ['products', 'list', filters, selectedBusinessId]
             if (key[0] !== 'products' || key[1] !== 'list') return false;
             // Only update queries that explicitly filter out archived products (archived: false)
             const filters = key[2] as ProductFilters | undefined;
-            return filters?.archived === false;
+            const shouldUpdate = filters?.archived === false;
+            console.log('Cache update predicate check:', {
+              keyLength: key.length,
+              keyStructure: key,
+              filters,
+              shouldUpdate,
+            });
+            return shouldUpdate;
           },
         },
         (oldData: any) => {
           if (!oldData || !oldData.data) {
-            console.log('No oldData to update');
+            console.log('No oldData to update - query structure:', oldData);
             return oldData;
           }
           const filtered = oldData.data.filter((p: Product) => p.id !== productId);
@@ -173,6 +181,7 @@ export function useArchiveProduct() {
             beforeCount: oldData.data.length,
             afterCount: filtered.length,
             productId,
+            oldDataKeys: Object.keys(oldData),
           });
           return {
             ...oldData,
