@@ -31,9 +31,14 @@ export async function listProducts(
   // If archived === true, show only archived
   // Handle both boolean and string values (in case validation didn't convert)
   const archivedFilter = filters.archived;
-  const isArchivedFalse = archivedFilter === false || archivedFilter === 'false' || archivedFilter === undefined;
-  const isArchivedTrue = archivedFilter === true || archivedFilter === 'true';
-  
+  // Type guard to handle both boolean and string values
+  const isArchivedFalse =
+    archivedFilter === false ||
+    archivedFilter === undefined ||
+    (typeof archivedFilter === 'string' && archivedFilter.toLowerCase() === 'false');
+  const isArchivedTrue =
+    archivedFilter === true || (typeof archivedFilter === 'string' && archivedFilter.toLowerCase() === 'true');
+
   if (isArchivedFalse) {
     query = query.is('archived_at', null);
   } else if (isArchivedTrue) {

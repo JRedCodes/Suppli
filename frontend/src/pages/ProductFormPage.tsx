@@ -84,10 +84,11 @@ export default function ProductFormPage() {
               unit_type: data.unit_type || 'unit',
               sku: data.sku || undefined,
             });
-          } catch (linkError: any) {
+          } catch (linkError: unknown) {
             console.error('Failed to link product to vendor:', linkError);
+            const linkErrorMessage = linkError instanceof Error ? linkError.message : 'Unknown error';
             // Product was created, but linking failed - show warning but still navigate
-            setFormError(`Product created, but failed to link to vendor: ${linkError?.message || 'Unknown error'}`);
+            setFormError(`Product created, but failed to link to vendor: ${linkErrorMessage}`);
             // Still navigate after a short delay
             setTimeout(() => navigate('/products'), 2000);
             return;
@@ -95,7 +96,7 @@ export default function ProductFormPage() {
         }
       }
       navigate('/products');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to save product:', error);
       setFormError(error?.message || 'Failed to save product. Please try again.');
     }

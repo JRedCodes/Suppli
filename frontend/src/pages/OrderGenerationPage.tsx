@@ -37,7 +37,7 @@ export default function OrderGenerationPage() {
       if (result.orderId) {
         navigate(`/orders/${result.orderId}`);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to generate order:', error);
       // Extract error message from API error
       const message = error?.message || 'Failed to generate order. Please try again.';

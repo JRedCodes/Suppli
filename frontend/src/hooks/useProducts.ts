@@ -163,7 +163,7 @@ export function useArchiveProduct() {
             return filters?.archived === false;
           },
         },
-        (oldData: any) => {
+        (oldData: ProductsPaginatedResponse<Product> | undefined) => {
           if (!oldData || !oldData.data) {
             return oldData;
           }

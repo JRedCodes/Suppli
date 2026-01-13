@@ -49,7 +49,7 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
     };
 
     fetchBusinesses();
-  }, [session?.access_token]);
+  }, [session?.access_token, selectedBusinessId]);
 
   const value = useMemo(
     () => ({
