@@ -144,7 +144,7 @@ WITH CHECK (
     WHERE user_id = auth.uid()
       AND role IN ('owner', 'manager')
   )
-  OR actor_type = 'system'
 );
 
--- Learning adjustments are typically system-generated, but managers can view
+-- Learning adjustments are typically system-generated (via service role, bypasses RLS)
+-- Owners and managers can also manually insert adjustments if needed
