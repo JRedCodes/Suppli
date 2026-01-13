@@ -63,6 +63,7 @@ export interface ProductContext {
   salesData?: ProductSalesData;
   previousOrder?: PreviousOrderData;
   activePromotion?: PromotionData;
+  learningAdjustment?: number; // Quantity bias multiplier from learning loop (e.g., 0.95 for -5%, 1.1 for +10%)
 }
 
 /**

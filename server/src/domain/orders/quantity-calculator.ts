@@ -131,6 +131,11 @@ export function calculateRecommendedQuantity(
   // Apply promotion uplift
   let quantity = applyPromotionUplift(baseline, context.activePromotion);
 
+  // Apply learning adjustment (quantity bias from past user edits)
+  if (context.learningAdjustment && context.learningAdjustment !== 1.0) {
+    quantity = quantity * context.learningAdjustment;
+  }
+
   // Apply adjustment caps
   quantity = applyAdjustmentCaps(quantity, baseline, mode, confidenceScore, context.wasteSensitive);
 
@@ -144,6 +149,12 @@ export function calculateRecommendedQuantity(
   let adjustmentReason: string | undefined;
   if (context.activePromotion) {
     adjustmentReason = `Promotion uplift: ${context.activePromotion.uplift}`;
+  }
+  if (context.learningAdjustment && context.learningAdjustment !== 1.0) {
+    const percentChange = ((context.learningAdjustment - 1) * 100).toFixed(0);
+    const direction = context.learningAdjustment > 1 ? 'increased' : 'decreased';
+    const existingReason = adjustmentReason ? `${adjustmentReason}; ` : '';
+    adjustmentReason = `${existingReason}Learning adjustment: ${direction} by ${Math.abs(Number(percentChange))}% based on past edits`;
   }
 
   return {
