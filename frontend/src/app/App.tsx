@@ -8,6 +8,8 @@ import OrderDetailPage from '../pages/OrderDetailPage';
 import OrderGenerationPage from '../pages/OrderGenerationPage';
 import VendorsListPage from '../pages/VendorsListPage';
 import VendorFormPage from '../pages/VendorFormPage';
+import ProductsListPage from '../pages/ProductsListPage';
+import ProductFormPage from '../pages/ProductFormPage';
 import OnboardingPage from '../pages/OnboardingPage';
 import { ProtectedRoute } from '../components/ProtectedRoute';
 
@@ -25,6 +27,9 @@ function App() {
           <Route path="vendors" element={<VendorsListPage />} />
           <Route path="vendors/new" element={<VendorFormPage />} />
           <Route path="vendors/:vendorId" element={<VendorFormPage />} />
+          <Route path="products" element={<ProductsListPage />} />
+          <Route path="products/new" element={<ProductFormPage />} />
+          <Route path="products/:productId" element={<ProductFormPage />} />
           <Route path="onboarding" element={<OnboardingPage />} />
         </Route>
       </Route>

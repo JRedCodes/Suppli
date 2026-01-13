@@ -21,20 +21,26 @@ export default function AppLayout() {
               <Link to="/" className="text-2xl font-bold text-gray-900">
                 Suppli
               </Link>
-              <nav className="hidden md:flex items-center space-x-4">
-                <Link
-                  to="/orders"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md hover:bg-gray-50"
-                >
-                  Orders
-                </Link>
-                <Link
-                  to="/vendors"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md hover:bg-gray-50"
-                >
-                  Vendors
-                </Link>
-              </nav>
+                      <nav className="hidden md:flex items-center space-x-4">
+                        <Link
+                          to="/orders"
+                          className="text-sm font-medium text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md hover:bg-gray-50"
+                        >
+                          Orders
+                        </Link>
+                        <Link
+                          to="/vendors"
+                          className="text-sm font-medium text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md hover:bg-gray-50"
+                        >
+                          Vendors
+                        </Link>
+                        <Link
+                          to="/products"
+                          className="text-sm font-medium text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md hover:bg-gray-50"
+                        >
+                          Products
+                        </Link>
+                      </nav>
             </div>
             <div className="flex items-center space-x-4">
               <div>

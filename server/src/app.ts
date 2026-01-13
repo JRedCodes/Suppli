@@ -8,6 +8,7 @@ import { AuthRequest } from './types/auth';
 import { sendSuccess } from './lib/response';
 import ordersRoutes from './routes/orders.routes';
 import vendorsRoutes from './routes/vendors.routes';
+import productsRoutes from './routes/products.routes';
 import paymentsRoutes from './routes/payments.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import { handleStripeWebhook } from './controllers/payments.controller';
@@ -75,6 +76,8 @@ export function createApp(): Express {
   app.use('/api/v1/orders', ordersRoutes);
   // Vendors routes
   app.use('/api/v1/vendors', vendorsRoutes);
+  // Products routes
+  app.use('/api/v1/products', productsRoutes);
   // Payments routes
   app.use('/api/v1/payments', paymentsRoutes);
   // Onboarding routes
