@@ -14,7 +14,18 @@ export const productIdParamSchema = z.object({
 });
 
 export const listProductsQuerySchema = z.object({
-  archived: z.preprocess((val) => String(val).toLowerCase() === 'true', z.boolean()).optional(),
+  archived: z
+    .preprocess(
+      (val) => {
+        if (val === undefined || val === null) return undefined;
+        const str = String(val).toLowerCase();
+        if (str === 'true') return true;
+        if (str === 'false') return false;
+        return undefined;
+      },
+      z.boolean().optional()
+    )
+    .optional(),
   category: z.string().optional(),
   page: z.preprocess((val) => parseInt(String(val), 10), z.number().int().positive()).optional(),
   pageSize: z.preprocess((val) => parseInt(String(val), 10), z.number().int().positive()).optional(),
