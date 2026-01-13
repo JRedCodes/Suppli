@@ -146,8 +146,17 @@ export function useArchiveProduct() {
       });
     },
     onSuccess: (data, productId) => {
+      // Update the detail query
       queryClient.setQueryData(productKeys.detail(productId), data);
+      // Invalidate all product list queries to refetch
       queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return key[0] === 'products' && key[1] === 'list';
+        },
+      });
+      // Also refetch immediately to ensure UI updates
+      queryClient.refetchQueries({
         predicate: (query) => {
           const key = query.queryKey;
           return key[0] === 'products' && key[1] === 'list';

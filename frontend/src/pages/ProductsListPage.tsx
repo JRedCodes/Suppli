@@ -46,6 +46,8 @@ export default function ProductsListPage() {
     try {
       await archiveProduct.mutateAsync(archiveTarget.id);
       setArchiveTarget(null);
+      // Manually refetch to ensure UI updates
+      await refetch();
     } catch (error) {
       console.error('Failed to archive product:', error);
     }
