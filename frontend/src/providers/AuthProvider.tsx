@@ -95,6 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.session.user.email,
         hasAccessToken: !!data.session.access_token,
         accessTokenLength: data.session.access_token?.length || 0,
+        sessionKeys: Object.keys(data.session),
+        fullSession: data.session, // Full session for debugging
       });
     } else {
       console.warn('Sign-in succeeded but no session returned');

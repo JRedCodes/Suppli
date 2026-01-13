@@ -35,8 +35,14 @@ export function useVendors(filters: VendorFilters = {}) {
     queryFn: () => {
       // Supabase session uses access_token property
       const token = session?.access_token;
+      console.log('useVendors queryFn:', {
+        hasSession: !!session,
+        hasAccessToken: !!session?.access_token,
+        sessionKeys: session ? Object.keys(session) : [],
+        selectedBusinessId,
+      });
       if (!token) {
-        console.error('No access token in session:', { session, hasSession: !!session });
+        console.error('No access token in session:', { session, hasSession: !!session, sessionType: typeof session });
         throw new Error('No authentication token available. Please sign in again.');
       }
       return vendorsService.list(filters, {

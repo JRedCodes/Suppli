@@ -46,6 +46,7 @@ export async function apiRequest<T>(
   // Add authentication token
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('API request with token:', { endpoint, tokenLength: token.length, tokenPrefix: token.substring(0, 20) + '...' });
   } else {
     console.warn('API request made without authentication token:', { endpoint, hasBusinessId: !!businessId });
   }
