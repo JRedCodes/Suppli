@@ -2,9 +2,10 @@
  * Orders controller
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../types/auth';
 import { sendSuccess, sendPaginated } from '../lib/response';
+import { sendError } from '../lib/response';
 import { generateOrder } from '../services/order-generation.service';
 import {
   createOrderFromGeneration,
