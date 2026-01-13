@@ -133,7 +133,7 @@ export async function recordQuantityEdit(
  * When an order is approved without edits, we can slightly increase confidence
  * This is tracked implicitly through the absence of edits rather than explicit adjustments
  */
-export async function recordOrderApproval(businessId: string, orderId: string): Promise<void> {
+export async function recordOrderApproval(_businessId: string, _orderId: string): Promise<void> {
   // For MVP, approval without edits is tracked via order_events
   // Future: Could calculate confidence adjustments here
   // For now, we just ensure the event is logged (handled by orders service)
