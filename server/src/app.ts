@@ -7,6 +7,8 @@ import { verifyJWT, resolveBusinessContext, requireManager, validateBody } from 
 import { AuthRequest } from './types/auth';
 import { sendSuccess } from './lib/response';
 import ordersRoutes from './routes/orders.routes';
+import vendorsRoutes from './routes/vendors.routes';
+import productsRoutes from './routes/products.routes';
 import paymentsRoutes from './routes/payments.routes';
 import onboardingRoutes from './routes/onboarding.routes';
 import { handleStripeWebhook } from './controllers/payments.controller';
@@ -44,6 +46,15 @@ export function createApp(): Express {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Request logging middleware (for debugging)
+  app.use('/api/v1', (req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+      hasAuth: !!req.headers.authorization,
+      hasBusinessId: !!req.headers['x-business-id'],
+    });
+    next();
+  });
+
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({
@@ -63,6 +74,10 @@ export function createApp(): Express {
 
   // Orders routes
   app.use('/api/v1/orders', ordersRoutes);
+  // Vendors routes
+  app.use('/api/v1/vendors', vendorsRoutes);
+  // Products routes
+  app.use('/api/v1/products', productsRoutes);
   // Payments routes
   app.use('/api/v1/payments', paymentsRoutes);
   // Onboarding routes

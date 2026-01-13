@@ -1,5 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState } from 'react';
+import { createContext, useContext, useMemo, useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { onboardingService } from '../services/onboarding.service';
 
 type Business = { id: string; name: string };
 
@@ -7,25 +9,56 @@ interface BusinessContextValue {
   businesses: Business[];
   selectedBusinessId: string;
   setSelectedBusinessId: (id: string) => void;
+  loading: boolean;
 }
 
 const BusinessContext = createContext<BusinessContextValue | undefined>(undefined);
 
-const DEFAULT_BUSINESSES: Business[] = [
-  { id: 'biz-1', name: 'Demo Business A' },
-  { id: 'biz-2', name: 'Demo Business B' },
-];
-
 export function BusinessProvider({ children }: { children: React.ReactNode }) {
-  const [selectedBusinessId, setSelectedBusinessId] = useState(DEFAULT_BUSINESSES[0].id);
+  const { session } = useAuth();
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [selectedBusinessId, setSelectedBusinessId] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user's businesses when session is available
+  useEffect(() => {
+    const fetchBusinesses = async () => {
+      if (!session?.access_token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await onboardingService.getBusinesses({
+          token: session.access_token,
+        });
+        setBusinesses(data);
+        
+        // Auto-select first business if available and none selected
+        if (data.length > 0 && !selectedBusinessId) {
+          setSelectedBusinessId(data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch businesses:', error);
+        setBusinesses([]);
+        // If no businesses and we have a session, user needs to initialize
+        // This will be handled by redirecting to onboarding if needed
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBusinesses();
+  }, [session?.access_token, selectedBusinessId]);
 
   const value = useMemo(
     () => ({
-      businesses: DEFAULT_BUSINESSES,
+      businesses,
       selectedBusinessId,
       setSelectedBusinessId,
+      loading,
     }),
-    [selectedBusinessId]
+    [businesses, selectedBusinessId, loading]
   );
 
   return <BusinessContext.Provider value={value}>{children}</BusinessContext.Provider>;

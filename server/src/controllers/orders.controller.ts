@@ -2,9 +2,10 @@
  * Orders controller
  */
 
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AuthRequest } from '../types/auth';
 import { sendSuccess, sendPaginated } from '../lib/response';
+import { sendError } from '../lib/response';
 import { generateOrder } from '../services/order-generation.service';
 import {
   createOrderFromGeneration,
@@ -19,38 +20,57 @@ import {
  * Generate a new order
  * POST /api/v1/orders/generate
  */
-export async function generateOrderHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const { orderPeriodStart, orderPeriodEnd, mode, vendorIds } = req.body;
+export async function generateOrderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const { orderPeriodStart, orderPeriodEnd, mode, vendorIds } = req.body;
 
-  // Generate order recommendations
-  const generationResult = await generateOrder({
-    businessId: authReq.businessId!,
-    orderPeriodStart: new Date(orderPeriodStart),
-    orderPeriodEnd: new Date(orderPeriodEnd),
-    mode: mode || 'guided',
-    vendorIds,
-  });
+    // Generate order recommendations
+    const generationResult = await generateOrder({
+      businessId: authReq.businessId!,
+      orderPeriodStart: new Date(orderPeriodStart),
+      orderPeriodEnd: new Date(orderPeriodEnd),
+      mode: mode || 'guided',
+      vendorIds,
+    });
 
-  // Create order in database
-  const orderId = await createOrderFromGeneration(
-    authReq.businessId!,
-    authReq.userId!,
-    new Date(orderPeriodStart),
-    new Date(orderPeriodEnd),
-    mode || 'guided',
-    generationResult
-  );
+    // Create order in database
+    const orderId = await createOrderFromGeneration(
+      authReq.businessId!,
+      authReq.userId!,
+      new Date(orderPeriodStart),
+      new Date(orderPeriodEnd),
+      mode || 'guided',
+      generationResult
+    );
 
-  sendSuccess(
-    res,
-    {
-      orderId,
-      status: mode === 'simulation' ? 'draft' : 'needs_review',
-      summary: generationResult.summary,
-    },
-    201
-  );
+    sendSuccess(
+      res,
+      {
+        orderId,
+        status: mode === 'simulation' ? 'draft' : 'needs_review',
+        summary: generationResult.summary,
+      },
+      201
+    );
+  } catch (error) {
+    // Provide helpful error messages for common issues
+    if (error instanceof Error) {
+      if (error.message.includes('No products found')) {
+        sendError(res, 'NO_PRODUCTS', error.message, 400);
+        return;
+      }
+      if (error.message.includes('No vendors found')) {
+        sendError(res, 'NO_VENDORS', error.message, 400);
+        return;
+      }
+    }
+    next(error);
+  }
 }
 
 /**

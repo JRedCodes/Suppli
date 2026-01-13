@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../lib/supabase';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { UnauthorizedError, ForbiddenError } from '../errors';
 import { AuthRequest, BusinessMembership } from '../types/auth';
 
@@ -45,17 +45,23 @@ export async function resolveBusinessContext(
   next: NextFunction
 ): Promise<void> {
   try {
+    console.log('resolveBusinessContext middleware called');
     const authReq = req as AuthRequest;
 
     // Ensure user is authenticated
     if (!authReq.userId) {
+      console.error('No userId in request');
       throw new UnauthorizedError('User must be authenticated');
     }
 
+    console.log('User authenticated, userId:', authReq.userId);
+
     // Extract business_id from request
     const businessId = extractBusinessId(req);
+    console.log('Extracted businessId:', businessId);
 
     if (!businessId) {
+      console.error('No businessId found in request');
       throw new UnauthorizedError(
         'Business context required (X-Business-Id header, business_id query param, or business_id in body)'
       );
@@ -64,11 +70,12 @@ export async function resolveBusinessContext(
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(businessId)) {
-      throw new UnauthorizedError('Invalid business_id format');
+      console.error('Invalid businessId format:', businessId, 'does not match UUID pattern');
+      throw new UnauthorizedError(`Invalid business_id format: ${businessId} (must be a valid UUID)`);
     }
 
     // Query business_users to verify membership and get role
-    const { data: membership, error } = await supabaseAdmin
+    const { data: membership, error } = await getSupabaseAdmin()
       .from('business_users')
       .select('business_id, role, created_at')
       .eq('user_id', authReq.userId)

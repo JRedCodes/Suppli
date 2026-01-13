@@ -90,9 +90,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.session) {
       setSession(data.session);
       setUser(data.session.user);
-      console.log('Sign-in successful:', { userId: data.session.user.id, email: data.session.user.email });
+      console.log('Sign-in successful:', {
+        userId: data.session.user.id,
+        email: data.session.user.email,
+        hasAccessToken: !!data.session.access_token,
+        accessTokenLength: data.session.access_token?.length || 0,
+        sessionKeys: Object.keys(data.session),
+        fullSession: data.session, // Full session for debugging
+      });
     } else {
       console.warn('Sign-in succeeded but no session returned');
+      // Try to get the session manually
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session) {
+        setSession(sessionData.session);
+        setUser(sessionData.session.user);
+        console.log('Retrieved session after sign-in:', {
+          hasAccessToken: !!sessionData.session.access_token,
+        });
+      }
     }
     
     return {};

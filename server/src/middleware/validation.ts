@@ -25,7 +25,9 @@ export function validate(schema: {
       // Validate query if schema provided
       if (schema.query) {
         const parsed = schema.query.parse(req.query);
-        // Type assertion needed because Express types are loose
+        // Replace req.query with parsed values to ensure types are correct
+        // Clear existing query params and assign parsed ones
+        Object.keys(req.query).forEach((key) => delete req.query[key]);
         Object.assign(req.query, parsed);
       }
 

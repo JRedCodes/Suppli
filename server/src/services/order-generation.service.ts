@@ -226,7 +226,9 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
     );
 
   if (!vendorProducts || vendorProducts.length === 0) {
-    throw new Error('No products found for vendors');
+    throw new Error(
+      'No products found for the selected vendors. Please add products to your vendors before generating orders. Products can be added through the vendor management interface.'
+    );
   }
 
   // Group products by vendor

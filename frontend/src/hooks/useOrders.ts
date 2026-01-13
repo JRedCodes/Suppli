@@ -32,12 +32,16 @@ export function useOrders(filters: OrderFilters = {}) {
 
   return useQuery({
     queryKey: [...orderKeys.list(filters), selectedBusinessId],
-    queryFn: () =>
-      ordersService.list(filters, {
+    queryFn: () => {
+      if (!session?.access_token) {
+        throw new Error('No authentication token available');
+      }
+      return ordersService.list(filters, {
         businessId: selectedBusinessId,
-        token: session?.access_token,
-      }),
-    enabled: !!selectedBusinessId && !!session,
+        token: session.access_token,
+      });
+    },
+    enabled: !!selectedBusinessId && !!session?.access_token,
   });
 }
 
