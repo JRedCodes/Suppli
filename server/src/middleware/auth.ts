@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../lib/supabase';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { UnauthorizedError } from '../errors';
 import { AuthRequest } from '../types/auth';
 
@@ -36,10 +36,20 @@ export async function verifyJWT(req: Request, _res: Response, next: NextFunction
     const {
       data: { user },
       error,
-    } = await supabaseAdmin.auth.getUser(token);
+    } = await getSupabaseAdmin().auth.getUser(token);
 
-    if (error || !user) {
-      throw new UnauthorizedError('Invalid or expired token');
+    if (error) {
+      console.error('Token verification error:', {
+        message: error.message,
+        status: error.status,
+        name: error.name,
+      });
+      throw new UnauthorizedError(`Invalid or expired token: ${error.message}`);
+    }
+
+    if (!user) {
+      console.error('Token verification returned no user');
+      throw new UnauthorizedError('Invalid or expired token: no user found');
     }
 
     // Attach user ID and user object to request
@@ -51,6 +61,7 @@ export async function verifyJWT(req: Request, _res: Response, next: NextFunction
     if (error instanceof UnauthorizedError) {
       next(error);
     } else {
+      console.error('Unexpected error in verifyJWT:', error);
       next(new UnauthorizedError('Authentication failed'));
     }
   }

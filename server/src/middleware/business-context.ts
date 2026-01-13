@@ -4,7 +4,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin } from '../lib/supabase';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { UnauthorizedError, ForbiddenError } from '../errors';
 import { AuthRequest, BusinessMembership } from '../types/auth';
 
@@ -68,7 +68,7 @@ export async function resolveBusinessContext(
     }
 
     // Query business_users to verify membership and get role
-    const { data: membership, error } = await supabaseAdmin
+    const { data: membership, error } = await getSupabaseAdmin()
       .from('business_users')
       .select('business_id, role, created_at')
       .eq('user_id', authReq.userId)
