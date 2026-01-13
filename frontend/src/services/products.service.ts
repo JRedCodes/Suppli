@@ -78,7 +78,36 @@ export const productsService = {
 
     const query = params.toString();
     const endpoint = query ? `/products?${query}` : '/products';
-    return apiGet<ProductsPaginatedResponse<Product>>(endpoint, options);
+    
+    // For paginated responses, we need the full response object { data: [], meta: {} }
+    // apiGet extracts data.data, but we need the full { data, meta } structure
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const url = `${API_URL}/api/v1${endpoint}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (options.token) {
+      headers['Authorization'] = `Bearer ${options.token}`;
+    }
+    if (options.businessId) {
+      headers['X-Business-Id'] = options.businessId;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const error = errorData.error || { code: 'UNKNOWN_ERROR', message: 'An error occurred' };
+      throw new Error(error.message || 'Failed to fetch products');
+    }
+
+    const responseData = await response.json();
+    // Backend returns { data: [], meta: {} } for paginated responses
+    return responseData as ProductsPaginatedResponse<Product>;
   },
 
   /**
