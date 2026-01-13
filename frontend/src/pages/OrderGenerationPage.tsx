@@ -40,7 +40,7 @@ export default function OrderGenerationPage() {
     } catch (error: unknown) {
       console.error('Failed to generate order:', error);
       // Extract error message from API error
-      const message = error?.message || 'Failed to generate order. Please try again.';
+      const message = error instanceof Error ? error.message : 'Failed to generate order. Please try again.';
       setErrorMessage(message);
     }
   };
