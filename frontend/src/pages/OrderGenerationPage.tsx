@@ -21,9 +21,11 @@ export default function OrderGenerationPage() {
   });
 
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
 
     try {
       const result = await generateOrder.mutateAsync({
@@ -35,8 +37,11 @@ export default function OrderGenerationPage() {
       if (result.orderId) {
         navigate(`/orders/${result.orderId}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate order:', error);
+      // Extract error message from API error
+      const message = error?.message || 'Failed to generate order. Please try again.';
+      setErrorMessage(message);
     }
   };
 
@@ -166,9 +171,9 @@ export default function OrderGenerationPage() {
         )}
 
         {/* Error Display */}
-        {generateOrder.isError && (
+        {(generateOrder.isError || errorMessage) && (
           <Alert variant="error" title="Error">
-            Failed to generate order. Please try again.
+            {errorMessage || 'Failed to generate order. Please try again.'}
           </Alert>
         )}
 
