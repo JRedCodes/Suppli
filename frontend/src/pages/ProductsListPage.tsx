@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { Loading } from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Alert } from '../components/ui/Alert';
-import { Modal, ModalFooter, ModalBody, ModalHeader } from '../components/ui/Modal';
+import { Modal, ModalFooter, ModalBody } from '../components/ui/Modal';
 import type { Product } from '../services/products.service';
 
 export default function ProductsListPage() {
@@ -67,7 +67,7 @@ export default function ProductsListPage() {
       key: 'waste_sensitive',
       header: 'Waste Sensitive',
       accessor: (product) => (
-        <Badge variant={product.waste_sensitive ? 'default' : 'secondary'}>
+        <Badge variant={product.waste_sensitive ? 'default' : 'info'}>
           {product.waste_sensitive ? 'Yes' : 'No'}
         </Badge>
       ),

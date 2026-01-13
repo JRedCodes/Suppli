@@ -163,3 +163,25 @@ export function ModalFooter({ children, className = '' }: ModalFooterProps) {
     </div>
   );
 }
+
+export interface ModalBodyProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function ModalBody({ children, className = '' }: ModalBodyProps) {
+  return <div className={`px-6 py-4 ${className}`}>{children}</div>;
+}
+
+export interface ModalHeaderProps {
+  title: string;
+  className?: string;
+}
+
+export function ModalHeader({ title, className = '' }: ModalHeaderProps) {
+  return (
+    <div className={`flex items-center justify-between px-6 py-4 border-b border-gray-200 ${className}`}>
+      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    </div>
+  );
+}
