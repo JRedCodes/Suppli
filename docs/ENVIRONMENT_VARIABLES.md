@@ -152,15 +152,31 @@ This document describes all environment variables required for Suppli developmen
    - Service Role Key → `SUPABASE_SERVICE_ROLE_KEY` (backend only)
 
 ### Stripe Keys
+
+**For Development (Test Mode):**
+
 1. Go to https://stripe.com
-2. Log in to Dashboard
-3. Go to Developers → API keys
-4. Copy:
-   - Secret key → `STRIPE_SECRET_KEY`
-5. Go to Developers → Webhooks
-6. Add endpoint: `https://your-api.com/api/v1/webhooks/stripe`
-7. Copy:
-   - Signing secret → `STRIPE_WEBHOOK_SECRET`
+2. Create account or log in
+3. Make sure you're in **Test mode** (toggle in top right)
+4. Go to **Developers → API keys**
+5. Copy:
+   - **Secret key** (starts with `sk_test_...`) → `STRIPE_SECRET_KEY`
+6. Go to **Developers → Webhooks**
+7. Click **Add endpoint**
+8. Enter endpoint URL:
+   - For local development: Use Stripe CLI (see below)
+   - For production: `https://your-api.com/api/v1/webhooks/stripe`
+9. Select events to listen to (at minimum: `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`)
+10. Copy the **Signing secret** (starts with `whsec_...`) → `STRIPE_WEBHOOK_SECRET`
+
+**For Local Development with Stripe CLI:**
+
+Instead of setting up a webhook endpoint in Stripe dashboard, you can use Stripe CLI to forward webhooks to your local server:
+
+1. Install Stripe CLI: https://stripe.com/docs/stripe-cli
+2. Run: `stripe listen --forward-to localhost:3001/api/v1/webhooks/stripe`
+3. Copy the webhook signing secret shown (starts with `whsec_...`)
+4. Use this as your `STRIPE_WEBHOOK_SECRET` in `.env.local`
 
 ---
 
@@ -183,8 +199,30 @@ This document describes all environment variables required for Suppli developmen
 
 ---
 
+## Validation
+
+### Backend Validation
+
+Run the validation script to check if all required environment variables are set:
+
+```bash
+cd server
+npm run validate-env
+```
+
+This will:
+- Check all required variables are present
+- Validate format (e.g., URLs start with `https://`, Stripe keys have correct prefix)
+- Show clear error messages if anything is missing
+
+### Frontend Validation
+
+The frontend will throw an error at startup if required environment variables are missing. Check the browser console for specific errors.
+
 ## Next Steps
 
 Once environment variables are set up:
-1. Proceed to Phase 1: Project Scaffolding
-2. See `IMPLEMENTATION_GUIDE.md` for detailed setup instructions
+1. Run validation: `npm run validate-env` (backend)
+2. Start dev servers and verify they load without errors
+3. Proceed to Phase 4.2: Stripe Integration
+4. See `IMPLEMENTATION_GUIDE.md` for detailed setup instructions
