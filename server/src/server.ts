@@ -1,8 +1,9 @@
-import dotenv from 'dotenv';
-import { createApp } from './app';
+// Load environment variables FIRST using require (executes immediately, not hoisted)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+require('dotenv').config({ path: '.env.local' });
 
-// Load environment variables
-dotenv.config({ path: '.env.local' });
+// Now import app (environment variables are already loaded)
+import { createApp } from './app';
 
 const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
