@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateConfidenceScore, scoreToConfidenceLevel, getConfidenceLevel } from '../confidence';
+import {
+  calculateConfidenceScore,
+  scoreToConfidenceLevel,
+  getConfidenceLevel,
+} from '../confidence';
 import { ProductContext } from '../types';
 
 describe('Confidence Scoring', () => {
@@ -149,9 +153,7 @@ describe('Confidence Scoring', () => {
         salesData: {
           productId: 'test-id',
           averageQuantity: 10,
-          recentSales: [
-            { date: new Date(), quantity: 10 },
-          ],
+          recentSales: [{ date: new Date(), quantity: 10 }],
           dataRecency: 1,
           dataConsistency: 0.9,
         },

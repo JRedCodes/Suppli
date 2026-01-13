@@ -45,12 +45,10 @@ describe('Vendors API', () => {
 
   describe('POST /api/v1/vendors', () => {
     it('requires authentication', async () => {
-      const response = await request(app)
-        .post('/api/v1/vendors')
-        .send({
-          name: 'Test Vendor',
-          ordering_method: 'email',
-        });
+      const response = await request(app).post('/api/v1/vendors').send({
+        name: 'Test Vendor',
+        ordering_method: 'email',
+      });
 
       expect(response.status).toBe(401);
     });

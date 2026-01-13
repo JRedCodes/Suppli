@@ -1,13 +1,13 @@
 /**
  * Integration tests for Orders API endpoints
- * 
+ *
  * Note: These tests require a test database or mocked Supabase client.
  * For now, they test the structure and validation.
  */
 
 /**
  * Integration tests for Orders API endpoints
- * 
+ *
  * Note: These tests require a test database or mocked Supabase client.
  * For now, they test the structure and validation.
  */
@@ -53,12 +53,10 @@ describe('Orders API', () => {
 
   describe('POST /api/v1/orders/generate', () => {
     it('requires authentication', async () => {
-      const response = await request(app)
-        .post('/api/v1/orders/generate')
-        .send({
-          orderPeriodStart: '2026-01-01',
-          orderPeriodEnd: '2026-01-07',
-        });
+      const response = await request(app).post('/api/v1/orders/generate').send({
+        orderPeriodStart: '2026-01-01',
+        orderPeriodEnd: '2026-01-07',
+      });
 
       expect(response.status).toBe(401);
     });
