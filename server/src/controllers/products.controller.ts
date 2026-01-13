@@ -19,13 +19,28 @@ export async function listProductsHandler(
 ): Promise<void> {
   try {
     const authReq = req as AuthRequest;
+    // The validation middleware should have already validated and transformed the query params
     const filters = req.query as unknown as ProductFilters;
 
     if (!authReq.businessId) {
       throw new UnauthorizedError('Business context is required');
     }
 
+    console.log('listProductsHandler - filters received:', {
+      filters,
+      archived: filters.archived,
+      archivedType: typeof filters.archived,
+      queryParams: req.query,
+    });
+
     const { data, meta } = await productsService.listProducts(authReq.businessId, filters);
+    
+    console.log('listProductsHandler - results:', {
+      dataCount: data.length,
+      hasArchived: data.some((p) => p.archived_at !== null),
+      archivedProducts: data.filter((p) => p.archived_at !== null).map((p) => ({ id: p.id, name: p.name, archived_at: p.archived_at })),
+    });
+    
     sendPaginated(res, data, meta);
   } catch (error) {
     next(error);

@@ -26,7 +26,10 @@ export async function listProducts(
     .select('*', { count: 'exact' })
     .eq('business_id', businessId);
 
-  if (filters.archived === false) {
+  // Default behavior: if archived is not specified, show only non-archived products
+  // If archived === false, explicitly show only non-archived
+  // If archived === true, show only archived
+  if (filters.archived === false || filters.archived === undefined) {
     query = query.is('archived_at', null);
   } else if (filters.archived === true) {
     query = query.not('archived_at', 'is', null);
