@@ -370,3 +370,228 @@ export async function sendOrder(businessId: string, orderId: string, userId: str
 
   return updated;
 }
+
+/**
+ * Add a new order line to an existing order
+ * Creates product if it doesn't exist, links to vendor if needed
+ */
+export async function addOrderLine(
+  businessId: string,
+  orderId: string,
+  vendorOrderId: string,
+  productId: string | null, // null if creating new product
+  productName: string, // Required if productId is null
+  quantity: number,
+  unitType: 'case' | 'unit',
+  userId: string
+) {
+  // Verify order exists and is editable
+  const { data: order, error: orderError } = await supabaseAdmin
+    .from('orders')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  if (order.status === 'sent' || order.status === 'cancelled') {
+    throw new Error('Cannot add products to sent or cancelled order');
+  }
+
+  // Verify vendor order exists and belongs to this order
+  const { data: vendorOrder, error: voError } = await supabaseAdmin
+    .from('vendor_orders')
+    .select('*, vendors!inner(id, name)')
+    .eq('id', vendorOrderId)
+    .eq('business_id', businessId)
+    .eq('order_id', orderId)
+    .single();
+
+  if (voError || !vendorOrder) {
+    throw new NotFoundError('Vendor order not found');
+  }
+
+  let finalProductId = productId;
+
+  // Create product if it doesn't exist
+  if (!finalProductId) {
+    const { data: newProduct, error: createError } = await supabaseAdmin
+      .from('products')
+      .insert({
+        business_id: businessId,
+        name: productName,
+        waste_sensitive: false,
+      })
+      .select('id')
+      .single();
+
+    if (createError || !newProduct) {
+      throw new Error(`Failed to create product: ${createError?.message || 'Unknown error'}`);
+    }
+
+    finalProductId = newProduct.id;
+
+    // Link product to vendor if not already linked
+    const { data: existingLink } = await supabaseAdmin
+      .from('vendor_products')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('vendor_id', vendorOrder.vendor_id)
+      .eq('product_id', finalProductId)
+      .maybeSingle();
+
+    if (!existingLink) {
+      await supabaseAdmin.from('vendor_products').insert({
+        business_id: businessId,
+        vendor_id: vendorOrder.vendor_id,
+        product_id: finalProductId,
+        unit_type: unitType,
+      });
+    }
+  }
+
+  // Check if order line already exists for this product
+  const { data: existingLine } = await supabaseAdmin
+    .from('order_lines')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('vendor_order_id', vendorOrderId)
+    .eq('product_id', finalProductId)
+    .maybeSingle();
+
+  if (existingLine) {
+    throw new Error('This product is already in the order');
+  }
+
+  // Get product info for context
+  const { data: product } = await supabaseAdmin
+    .from('products')
+    .select('name, waste_sensitive, max_stock_amount')
+    .eq('id', finalProductId)
+    .single();
+
+  // Apply max stock safeguard if set
+  let finalQuantity = quantity;
+  if (product?.max_stock_amount !== null && product?.max_stock_amount !== undefined) {
+    finalQuantity = Math.min(quantity, product.max_stock_amount);
+  }
+
+  // Round quantity appropriately based on unit type
+  if (unitType === 'case') {
+    finalQuantity = Math.round(finalQuantity); // Cases must be whole numbers
+  } else {
+    finalQuantity = Math.round(finalQuantity * 100) / 100; // Units can have 2 decimal places
+  }
+
+  // Create order line with conservative confidence
+  const { data: newLine, error: lineError } = await supabaseAdmin
+    .from('order_lines')
+    .insert({
+      business_id: businessId,
+      vendor_order_id: vendorOrderId,
+      product_id: finalProductId,
+      recommended_quantity: finalQuantity,
+      final_quantity: finalQuantity,
+      unit_type: unitType,
+      confidence_level: 'needs_review',
+      explanation: `Manually added product${product?.max_stock_amount && quantity > product.max_stock_amount ? ` (capped at max stock: ${product.max_stock_amount})` : ''}`,
+    })
+    .select()
+    .single();
+
+  if (lineError || !newLine) {
+    throw new Error(`Failed to add order line: ${lineError?.message || 'Unknown error'}`);
+  }
+
+  // Create order event
+  await supabaseAdmin.from('order_events').insert({
+    business_id: businessId,
+    order_id: orderId,
+    event_type: 'edited',
+    actor_type: 'user',
+    actor_id: userId,
+    after_snapshot: {
+      action: 'added_line',
+      product_id: finalProductId,
+      product_name: productName,
+      quantity: finalQuantity,
+    },
+  });
+
+  return newLine;
+}
+
+/**
+ * Remove an order line from an order
+ */
+export async function removeOrderLine(
+  businessId: string,
+  orderId: string,
+  lineId: string,
+  userId: string
+) {
+  // Verify order line exists and belongs to business/order
+  const { data: orderLine, error: checkError } = await supabaseAdmin
+    .from('order_lines')
+    .select(
+      `
+      *,
+      vendor_orders!inner(
+        order_id,
+        orders!inner(
+          id,
+          business_id,
+          status
+        )
+      ),
+      products!inner(name)
+    `
+    )
+    .eq('id', lineId)
+    .eq('business_id', businessId)
+    .single();
+
+  if (checkError || !orderLine) {
+    throw new NotFoundError('Order line not found');
+  }
+
+  const order = (orderLine.vendor_orders as any)?.orders;
+  if (!order || order.id !== orderId || order.business_id !== businessId) {
+    throw new NotFoundError('Order line does not belong to this order');
+  }
+
+  if (order.status === 'sent' || order.status === 'cancelled') {
+    throw new Error('Cannot remove order line from sent or cancelled order');
+  }
+
+  // Get product name for event
+  const product = (orderLine.products as any);
+  const productName = product?.name || 'Unknown Product';
+
+  // Delete order line
+  const { error: deleteError } = await supabaseAdmin.from('order_lines').delete().eq('id', lineId);
+
+  if (deleteError) {
+    throw new Error(`Failed to remove order line: ${deleteError.message}`);
+  }
+
+  // Create order event
+  await supabaseAdmin.from('order_events').insert({
+    business_id: businessId,
+    order_id: orderId,
+    event_type: 'edited',
+    actor_type: 'user',
+    actor_id: userId,
+    before_snapshot: {
+      action: 'removed_line',
+      product_id: orderLine.product_id,
+      product_name: productName,
+      quantity: orderLine.final_quantity,
+    },
+  });
+
+  return { success: true };
+}
