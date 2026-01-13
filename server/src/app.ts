@@ -45,6 +45,15 @@ export function createApp(): Express {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Request logging middleware (for debugging)
+  app.use('/api/v1', (req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+      hasAuth: !!req.headers.authorization,
+      hasBusinessId: !!req.headers['x-business-id'],
+    });
+    next();
+  });
+
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({
