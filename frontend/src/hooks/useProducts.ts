@@ -10,7 +10,6 @@ import {
   type UpdateVendorProductRequest,
   type Product,
   type ProductsPaginatedResponse,
-  type VendorProductsPaginatedResponse,
 } from '../services/products.service';
 
 export const productKeys = {
