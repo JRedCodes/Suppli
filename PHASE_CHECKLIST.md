@@ -14,7 +14,7 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 
 ## Phase 2 — Database & Supabase Setup
 - [x] 2.1 Supabase Project Setup ✅
-- [ ] 2.2 Database Schema Implementation
+- [x] 2.2 Database Schema Implementation ✅
 - [ ] 2.3 Row Level Security (RLS)
 - [ ] 2.4 Additional Schema Tables
 
@@ -67,14 +67,15 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 ---
 
 ## Current Phase
-**Status:** Phase 2.1 Complete ✅ → Phase 2.2 Next
+**Status:** Phase 2.2 Complete ✅ → Phase 2.3 Next
 
 **Next Steps:**
 1. ✅ Phase 0 Complete: Repository initialized and configured
 2. ✅ Phase 1 Complete: Project scaffolding done
-3. ✅ Phase 2.1 Complete: Supabase setup documentation and clients created
-4. **ACTION REQUIRED**: Create Supabase project and add credentials to .env.local files
-5. Proceed to Phase 2.2: Database Schema Implementation
+3. ✅ Phase 2.1 Complete: Supabase setup complete
+4. ✅ Phase 2.2 Complete: Database schema migrations created
+5. **ACTION REQUIRED**: Run migrations in Supabase SQL Editor (see docs/DATABASE_MIGRATIONS.md)
+6. Proceed to Phase 2.3: Row Level Security (RLS) Policies
 
 ---
 
