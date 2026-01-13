@@ -98,7 +98,8 @@ export default function ProductFormPage() {
       navigate('/products');
     } catch (error: unknown) {
       console.error('Failed to save product:', error);
-      setFormError(error?.message || 'Failed to save product. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save product. Please try again.';
+      setFormError(errorMessage);
     }
   };
 
