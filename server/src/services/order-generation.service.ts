@@ -204,7 +204,7 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
     throw new Error('No vendors found for order generation');
   }
 
-  // Fetch products for each vendor
+  // Fetch products for each vendor (exclude archived products)
   const { data: vendorProducts } = await supabaseAdmin
     .from('vendor_products')
     .select(
@@ -215,7 +215,9 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
       products!inner(
         id,
         name,
-        waste_sensitive
+        waste_sensitive,
+        max_stock_amount,
+        archived_at
       )
     `
     )
@@ -223,7 +225,8 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
     .in(
       'vendor_id',
       vendors.map((v) => v.id)
-    );
+    )
+    .is('products.archived_at', null); // Filter out archived products
 
   if (!vendorProducts || vendorProducts.length === 0) {
     throw new Error(
@@ -267,6 +270,7 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
         productId,
         productName: product.name,
         wasteSensitive: product.waste_sensitive || false,
+        maxStockAmount: product.max_stock_amount || null,
         unitType: (vp.unit_type as any) || 'unit',
         salesData: salesDataMap.get(productId),
         previousOrder: previousOrdersMap.get(productId),

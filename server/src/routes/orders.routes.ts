@@ -18,6 +18,8 @@ import {
   updateOrderLineHandler,
   approveOrderHandler,
   sendOrderHandler,
+  addOrderLineHandler,
+  removeOrderLineHandler,
 } from '../controllers/orders.controller';
 import {
   generateOrderSchema,
@@ -25,6 +27,7 @@ import {
   updateOrderLineSchema,
   orderIdParamSchema,
   orderLineIdParamSchema,
+  addOrderLineSchema,
 } from '../validators/orders';
 
 const router = Router();
@@ -70,6 +73,20 @@ router.get(
 );
 
 /**
+ * Add order line
+ * POST /api/v1/orders/:id/lines
+ * Requires: Staff, Manager, or Owner
+ */
+router.post(
+  '/:id/lines',
+  verifyJWT,
+  resolveBusinessContext,
+  validateParams(orderIdParamSchema),
+  validateBody(addOrderLineSchema),
+  addOrderLineHandler
+);
+
+/**
  * Update order line quantity
  * PATCH /api/v1/orders/:id/lines/:lineId
  * Requires: Staff, Manager, or Owner
@@ -81,6 +98,19 @@ router.patch(
   validateParams(orderLineIdParamSchema),
   validateBody(updateOrderLineSchema),
   updateOrderLineHandler
+);
+
+/**
+ * Remove order line
+ * DELETE /api/v1/orders/:id/lines/:lineId
+ * Requires: Staff, Manager, or Owner
+ */
+router.delete(
+  '/:id/lines/:lineId',
+  verifyJWT,
+  resolveBusinessContext,
+  validateParams(orderLineIdParamSchema),
+  removeOrderLineHandler
 );
 
 /**

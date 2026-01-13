@@ -14,6 +14,8 @@ import {
   updateOrderLineQuantity,
   approveOrder,
   sendOrder,
+  addOrderLine,
+  removeOrderLine,
 } from '../services/orders.service';
 
 /**

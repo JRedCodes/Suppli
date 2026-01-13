@@ -139,6 +139,11 @@ export function calculateRecommendedQuantity(
   // Apply adjustment caps
   quantity = applyAdjustmentCaps(quantity, baseline, mode, confidenceScore, context.wasteSensitive);
 
+  // Apply max stock amount safeguard if set
+  if (context.maxStockAmount !== null && context.maxStockAmount !== undefined) {
+    quantity = Math.min(quantity, context.maxStockAmount);
+  }
+
   // Round to 2 decimal places
   quantity = Math.round(quantity * 100) / 100;
 

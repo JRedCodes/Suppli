@@ -61,3 +61,18 @@ export const orderLineIdParamSchema = z.object({
   id: uuidSchema,
   lineId: uuidSchema,
 });
+
+/**
+ * Add order line schema
+ */
+export const addOrderLineSchema = z.object({
+  vendorOrderId: uuidSchema,
+  productId: uuidSchema.nullable().optional(), // null if creating new product
+  productName: z.string().min(1, 'Product name is required').max(255),
+  quantity: z.number().positive('Quantity must be greater than 0'),
+  unitType: z.enum(['case', 'unit']).default('unit'),
+});
+
+/**
+ * Remove order line schema (no body needed, just params)
+ */

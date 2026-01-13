@@ -104,16 +104,17 @@ export async function createProduct(businessId: string, data: CreateProductData)
     throw new ConflictError(`Product with name '${data.name}' already exists.`);
   }
 
-  const { data: newProduct, error } = await supabase
-    .from('products')
-    .insert({
-      business_id: businessId,
-      name: data.name,
-      category: data.category || null,
-      waste_sensitive: data.waste_sensitive ?? false,
-    })
-    .select('*')
-    .single();
+          const { data: newProduct, error } = await supabase
+            .from('products')
+            .insert({
+              business_id: businessId,
+              name: data.name,
+              category: data.category || null,
+              waste_sensitive: data.waste_sensitive ?? false,
+              max_stock_amount: data.max_stock_amount || null,
+            })
+            .select('*')
+            .single();
 
   if (error || !newProduct) {
     throw new Error(`Failed to create product: ${error?.message}`);
