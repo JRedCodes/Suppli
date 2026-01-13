@@ -37,18 +37,23 @@ export async function verifyJWT(req: Request, _res: Response, next: NextFunction
     console.log('Token extracted, length:', token.length, 'prefix:', token.substring(0, 20));
 
     // Verify JWT using Supabase
+    // Note: getUser() with a token verifies the JWT and returns the user
     const supabase = getSupabaseAdmin();
     console.log('Supabase client obtained, verifying token...');
+    console.log('SUPABASE_URL:', process.env.SUPABASE_URL?.substring(0, 30) + '...');
+    console.log('Has service role key:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
     
-    const result = await supabase.auth.getUser(token);
-    console.log('getUser result:', { 
-      hasUser: !!result.data?.user, 
-      hasError: !!result.error,
-      errorMessage: result.error?.message,
-      errorStatus: result.error?.status,
-    });
+    try {
+      const result = await supabase.auth.getUser(token);
+      console.log('getUser result:', { 
+        hasUser: !!result.data?.user, 
+        hasError: !!result.error,
+        errorMessage: result.error?.message,
+        errorStatus: result.error?.status,
+        errorName: result.error?.name,
+      });
 
-    const { data: { user }, error } = result;
+      const { data: { user }, error } = result;
 
     if (error) {
       console.error('Token verification error:', {
@@ -60,18 +65,22 @@ export async function verifyJWT(req: Request, _res: Response, next: NextFunction
       throw new UnauthorizedError(`Invalid or expired token: ${error.message}`);
     }
 
-    if (!user) {
-      console.error('Token verification returned no user');
-      throw new UnauthorizedError('Invalid or expired token: no user found');
+      if (!user) {
+        console.error('Token verification returned no user');
+        throw new UnauthorizedError('Invalid or expired token: no user found');
+      }
+
+      console.log('Token verified successfully, user ID:', user.id);
+
+      // Attach user ID and user object to request
+      (req as AuthRequest).userId = user.id;
+      (req as AuthRequest).user = user;
+
+      next();
+    } catch (getUserError) {
+      console.error('Error in getUser call:', getUserError);
+      throw getUserError;
     }
-
-    console.log('Token verified successfully, user ID:', user.id);
-
-    // Attach user ID and user object to request
-    (req as AuthRequest).userId = user.id;
-    (req as AuthRequest).user = user;
-
-    next();
   } catch (error) {
     console.error('Error in verifyJWT:', error);
     if (error instanceof UnauthorizedError) {
