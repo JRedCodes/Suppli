@@ -133,14 +133,14 @@ export async function updateProduct(
     }
   }
 
+  const updateData: Record<string, unknown> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.category !== undefined) updateData.category = data.category || null;
+  if (data.waste_sensitive !== undefined) updateData.waste_sensitive = data.waste_sensitive;
+
   const { data: updatedProduct, error } = await supabase
     .from('products')
-    .update({
-      name: data.name,
-      category: data.category,
-      waste_sensitive: data.waste_sensitive,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateData)
     .eq('business_id', businessId)
     .eq('id', productId)
     .select('*')

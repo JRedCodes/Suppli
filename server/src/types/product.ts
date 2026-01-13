@@ -6,7 +6,7 @@ export interface Product {
   waste_sensitive: boolean;
   archived_at: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 export interface CreateProductData {
