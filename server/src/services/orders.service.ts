@@ -5,6 +5,7 @@
 import { supabaseAdmin } from '../lib/supabase';
 import { NotFoundError } from '../errors';
 import { OrderGenerationResult } from '../domain/orders/types';
+import { recordQuantityEdit } from './learning.service';
 
 /**
  * Create order from generation result
@@ -255,6 +256,19 @@ export async function updateOrderLineQuantity(
       final_quantity: updated.final_quantity,
     },
   });
+
+  // Record learning from this edit (non-blocking)
+  // Only learn if the quantity actually changed
+  const recommendedQty = Number(orderLine.recommended_quantity);
+  const finalQty = Number(finalQuantity);
+  if (recommendedQty !== finalQty) {
+    recordQuantityEdit(businessId, orderLine.product_id, recommendedQty, finalQty).catch(
+      (error) => {
+        // Log but don't fail the update if learning fails
+        console.error('Failed to record learning adjustment:', error);
+      }
+    );
+  }
 
   return updated;
 }

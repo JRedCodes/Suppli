@@ -11,6 +11,7 @@ import {
   OrderLineRecommendation,
 } from '../domain/orders/types';
 import { calculateRecommendedQuantity } from '../domain/orders/quantity-calculator';
+import { getQuantityBiases } from './learning.service';
 
 /**
  * Fetch sales data for products
@@ -241,10 +242,11 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
   const allProductIds = vendorProducts.map((vp) => (vp.products as any).id);
 
   // Fetch supporting data in parallel
-  const [salesDataMap, previousOrdersMap, promotionsMap] = await Promise.all([
+  const [salesDataMap, previousOrdersMap, promotionsMap, learningBiasesMap] = await Promise.all([
     fetchSalesData(businessId, allProductIds, orderPeriodStart, orderPeriodEnd),
     fetchPreviousOrders(businessId, allProductIds),
     fetchActivePromotions(businessId, allProductIds, orderPeriodStart, orderPeriodEnd),
+    getQuantityBiases(businessId, allProductIds),
   ]);
 
   // Build product contexts and generate recommendations
@@ -267,6 +269,7 @@ export async function generateOrder(input: OrderGenerationInput): Promise<OrderG
         salesData: salesDataMap.get(productId),
         previousOrder: previousOrdersMap.get(productId),
         activePromotion: promotionsMap.get(productId),
+        learningAdjustment: learningBiasesMap.get(productId), // Quantity bias from learning loop
       };
 
       // Calculate recommendation

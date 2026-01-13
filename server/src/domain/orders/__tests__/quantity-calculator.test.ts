@@ -32,9 +32,7 @@ describe('Quantity Calculator', () => {
         salesData: {
           productId: 'test-id',
           averageQuantity: 10,
-          recentSales: [
-            { date: new Date(), quantity: 10 },
-          ],
+          recentSales: [{ date: new Date(), quantity: 10 }],
           dataRecency: 1,
           dataConsistency: 0.9,
         },
