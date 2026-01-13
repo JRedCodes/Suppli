@@ -4,10 +4,13 @@
  */
 
 import dotenv from 'dotenv';
-import { config } from '../src/config/index';
 
-// Load environment variables from .env.local
+// Load environment variables from .env.local BEFORE importing config
 dotenv.config({ path: '.env.local' });
+
+// Import config after env is loaded to ensure values are picked up
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { config } = require('../src/config/index');
 
 interface ValidationResult {
   variable: string;
