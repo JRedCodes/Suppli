@@ -14,7 +14,7 @@ import type { Product } from '../services/products.service';
 export default function ProductsListPage() {
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
-  const { data, isLoading, error, refetch } = useProducts({ archived: false });
+  const { data, isLoading, error } = useProducts({ archived: false });
   const archiveProduct = useArchiveProduct();
   const [archiveTarget, setArchiveTarget] = useState<Product | null>(null);
 
