@@ -8,6 +8,7 @@ import {
   type UpdateProductRequest,
   type CreateVendorProductRequest,
   type UpdateVendorProductRequest,
+  type Product,
 } from '../services/products.service';
 
 export const productKeys = {

@@ -46,10 +46,6 @@ export default function ProductsListPage() {
     try {
       await archiveProduct.mutateAsync(archiveTarget.id);
       setArchiveTarget(null);
-      // Manually refetch to ensure UI updates - wait a bit for DB to update
-      setTimeout(async () => {
-        await refetch();
-      }, 100);
     } catch (error) {
       console.error('Failed to archive product:', error);
     }
