@@ -39,24 +39,32 @@ export default function AppLayout() {
             <div className="flex items-center space-x-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600">Business</label>
-                <select
-                  value={selectedBusinessId}
-                  onChange={(e) => setSelectedBusinessId(e.target.value)}
-                  disabled={businessesLoading || businesses.length === 0}
-                  className="mt-1 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  {businessesLoading ? (
+                {businessesLoading ? (
+                  <select disabled className="mt-1 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm">
                     <option>Loading...</option>
-                  ) : businesses.length === 0 ? (
-                    <option>No businesses</option>
-                  ) : (
-                    businesses.map((biz) => (
+                  </select>
+                ) : businesses.length === 0 ? (
+                  <div className="mt-1">
+                    <Link
+                      to="/onboarding"
+                      className="text-xs text-indigo-600 hover:text-indigo-700 underline"
+                    >
+                      Create Business
+                    </Link>
+                  </div>
+                ) : (
+                  <select
+                    value={selectedBusinessId}
+                    onChange={(e) => setSelectedBusinessId(e.target.value)}
+                    className="mt-1 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  >
+                    {businesses.map((biz) => (
                       <option key={biz.id} value={biz.id}>
                         {biz.name}
                       </option>
-                    ))
-                  )}
-                </select>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="text-sm text-gray-700">
                 <div className="font-medium">{user?.email}</div>

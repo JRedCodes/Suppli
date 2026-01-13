@@ -41,13 +41,15 @@ export function BusinessProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Failed to fetch businesses:', error);
         setBusinesses([]);
+        // If no businesses and we have a session, user needs to initialize
+        // This will be handled by redirecting to onboarding if needed
       } finally {
         setLoading(false);
       }
     };
 
     fetchBusinesses();
-  }, [session?.access_token, selectedBusinessId]);
+  }, [session?.access_token]);
 
   const value = useMemo(
     () => ({

@@ -1,9 +1,28 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useBusiness } from '../hooks/useBusiness';
 import { Button } from '../components/ui/Button';
+import { Alert } from '../components/ui/Alert';
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { businesses, loading: businessesLoading } = useBusiness();
+  const navigate = useNavigate();
+
+  // Redirect to onboarding if no businesses
+  if (!businessesLoading && businesses.length === 0) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto">
+        <Alert variant="info" title="Welcome to Suppli!">
+          <p className="mb-4">
+            You need to create your first business to get started. This will set up your account and allow you to
+            start managing vendors and orders.
+          </p>
+          <Button onClick={() => navigate('/onboarding')}>Create Your First Business</Button>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
