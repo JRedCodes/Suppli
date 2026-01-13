@@ -33,12 +33,15 @@ export function useVendors(filters: VendorFilters = {}) {
   return useQuery({
     queryKey: [...vendorKeys.list(filters), selectedBusinessId],
     queryFn: () => {
-      if (!session?.access_token) {
-        throw new Error('No authentication token available');
+      // Supabase session uses access_token property
+      const token = session?.access_token;
+      if (!token) {
+        console.error('No access token in session:', { session, hasSession: !!session });
+        throw new Error('No authentication token available. Please sign in again.');
       }
       return vendorsService.list(filters, {
         businessId: selectedBusinessId,
-        token: session.access_token,
+        token,
       });
     },
     enabled: !!selectedBusinessId && !!session?.access_token,
