@@ -2,8 +2,10 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { verifyJWT, resolveBusinessContext, requireManager } from './middleware';
+import { z } from 'zod';
+import { verifyJWT, resolveBusinessContext, requireManager, validateBody } from './middleware';
 import { AuthRequest } from './types/auth';
+import { sendSuccess } from './lib/response';
 
 /**
  * Creates and configures the Express application
@@ -60,11 +62,29 @@ export function createApp(): Express {
     requireManager,
     (req: Request, res: Response) => {
       const authReq = req as AuthRequest;
-      res.json({
+      sendSuccess(res, {
         message: 'Authentication successful',
         userId: authReq.userId,
         businessId: authReq.businessId,
         role: authReq.role,
+      });
+    }
+  );
+
+  // Test validation endpoint (for testing validation middleware)
+  app.post(
+    '/api/v1/test-validation',
+    validateBody(
+      z.object({
+        name: z.string().min(1, 'Name is required'),
+        email: z.string().email('Invalid email format'),
+        age: z.number().int().min(0).max(120).optional(),
+      })
+    ),
+    (req: Request, res: Response) => {
+      sendSuccess(res, {
+        message: 'Validation successful',
+        received: req.body,
       });
     }
   );
