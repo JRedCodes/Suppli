@@ -25,7 +25,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
             {label}
-            {required && <span className="text-red-600 ml-1" aria-label="required">*</span>}
+            {required && (
+              <span className="text-red-600 ml-1" aria-label="required">
+                *
+              </span>
+            )}
           </label>
         )}
         <input
@@ -79,7 +83,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label htmlFor={textareaId} className="block text-sm font-medium text-gray-700 mb-1">
             {label}
-            {required && <span className="text-red-600 ml-1" aria-label="required">*</span>}
+            {required && (
+              <span className="text-red-600 ml-1" aria-label="required">
+                *
+              </span>
+            )}
           </label>
         )}
         <textarea

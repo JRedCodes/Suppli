@@ -20,7 +20,9 @@ export default function AppLayout() {
             <Link to="/" className="text-2xl font-bold text-gray-900">
               Suppli
             </Link>
-            <span className="text-sm text-gray-500 hidden sm:inline">Ordering & vendor automation</span>
+            <span className="text-sm text-gray-500 hidden sm:inline">
+              Ordering & vendor automation
+            </span>
           </div>
           <div className="flex items-center space-x-4">
             <div>

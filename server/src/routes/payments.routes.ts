@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { verifyJWT, resolveBusinessContext, validateBody } from '../middleware';
-import { createBillingPortalSession, createCheckoutSession } from '../controllers/payments.controller';
+import {
+  createBillingPortalSession,
+  createCheckoutSession,
+} from '../controllers/payments.controller';
 import { z } from 'zod';
 
 const router = Router();

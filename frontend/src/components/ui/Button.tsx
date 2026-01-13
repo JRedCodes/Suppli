@@ -37,7 +37,8 @@ export function Button({
   className = '',
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none';
+  const baseStyles =
+    'inline-flex items-center justify-center font-medium rounded-md transition-colors focus:outline-none';
   const variantStyle = variantStyles[variant];
   const sizeStyle = sizeStyles[size];
   const isDisabled = disabled || loading;
@@ -58,7 +59,14 @@ export function Button({
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
           <path
             className="opacity-75"
             fill="currentColor"

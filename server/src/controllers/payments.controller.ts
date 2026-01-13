@@ -37,7 +37,9 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     });
 
     if (!prices.data.length) {
-      res.status(400).json({ error: { code: 'PRICE_NOT_FOUND', message: 'Price not found for lookup key' } });
+      res
+        .status(400)
+        .json({ error: { code: 'PRICE_NOT_FOUND', message: 'Price not found for lookup key' } });
       return;
     }
 
@@ -63,7 +65,11 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     res.status(200).json({ url: session.url });
   } catch (error) {
     console.error('Stripe checkout session error:', error);
-    res.status(500).json({ error: { code: 'CHECKOUT_SESSION_ERROR', message: 'Failed to create checkout session' } });
+    res
+      .status(500)
+      .json({
+        error: { code: 'CHECKOUT_SESSION_ERROR', message: 'Failed to create checkout session' },
+      });
   }
 }
 
@@ -89,7 +95,9 @@ export async function createBillingPortalSession(req: Request, res: Response): P
     const stripe = getStripeClient();
     const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
     if (!checkoutSession.customer) {
-      res.status(400).json({ error: { code: 'CUSTOMER_NOT_FOUND', message: 'No customer on session' } });
+      res
+        .status(400)
+        .json({ error: { code: 'CUSTOMER_NOT_FOUND', message: 'No customer on session' } });
       return;
     }
 
@@ -101,7 +109,11 @@ export async function createBillingPortalSession(req: Request, res: Response): P
     res.status(200).json({ url: portalSession.url });
   } catch (error) {
     console.error('Stripe portal session error:', error);
-    res.status(500).json({ error: { code: 'PORTAL_SESSION_ERROR', message: 'Failed to create portal session' } });
+    res
+      .status(500)
+      .json({
+        error: { code: 'PORTAL_SESSION_ERROR', message: 'Failed to create portal session' },
+      });
   }
 }
 

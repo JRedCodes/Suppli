@@ -4,7 +4,10 @@
 
 import { Router } from 'express';
 import { verifyJWT } from '../middleware';
-import { initializeUserHandler, getUserBusinessesHandler } from '../controllers/onboarding.controller';
+import {
+  initializeUserHandler,
+  getUserBusinessesHandler,
+} from '../controllers/onboarding.controller';
 
 const router = Router();
 

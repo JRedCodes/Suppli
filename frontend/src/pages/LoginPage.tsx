@@ -30,7 +30,10 @@ export default function LoginPage() {
       if (result.error) {
         setError(result.error);
       } else if (result.success) {
-        setSuccess(result.message || 'Account created successfully! Please check your email to confirm your account.');
+        setSuccess(
+          result.message ||
+            'Account created successfully! Please check your email to confirm your account.'
+        );
         // Switch to sign-in mode after successful signup
         setTimeout(() => {
           setIsSignUp(false);
@@ -121,9 +124,7 @@ export default function LoginPage() {
             }}
             className="text-sm text-indigo-600 hover:text-indigo-700"
           >
-            {isSignUp
-              ? 'Already have an account? Sign in'
-              : "Don't have an account? Sign up"}
+            {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
           </button>
         </div>
       </div>

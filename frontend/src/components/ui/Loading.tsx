@@ -12,7 +12,11 @@ const sizeStyles = {
 
 export function Loading({ size = 'md', className = '', text }: LoadingProps) {
   return (
-    <div className={`flex flex-col items-center justify-center ${className}`} role="status" aria-label="Loading">
+    <div
+      className={`flex flex-col items-center justify-center ${className}`}
+      role="status"
+      aria-label="Loading"
+    >
       <svg
         className={`animate-spin ${sizeStyles[size]} text-indigo-600`}
         xmlns="http://www.w3.org/2000/svg"
@@ -20,7 +24,14 @@ export function Loading({ size = 'md', className = '', text }: LoadingProps) {
         viewBox="0 0 24 24"
         aria-hidden="true"
       >
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <circle
+          className="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="4"
+        />
         <path
           className="opacity-75"
           fill="currentColor"

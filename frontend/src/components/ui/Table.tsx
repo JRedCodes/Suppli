@@ -36,8 +36,7 @@ export function Table<T>({
   const handleSort = (columnKey: string) => {
     if (!onSort || !columns.find((col) => col.key === columnKey)?.sortable) return;
 
-    const newDirection =
-      sortColumn === columnKey && sortDirection === 'asc' ? 'desc' : 'asc';
+    const newDirection = sortColumn === columnKey && sortDirection === 'asc' ? 'desc' : 'asc';
     onSort(columnKey, newDirection);
   };
 
@@ -55,7 +54,11 @@ export function Table<T>({
   }
 
   if (data.length === 0) {
-    return <div className="py-12">{emptyState || <p className="text-center text-gray-500">No data available</p>}</div>;
+    return (
+      <div className="py-12">
+        {emptyState || <p className="text-center text-gray-500">No data available</p>}
+      </div>
+    );
   }
 
   return (
@@ -87,7 +90,12 @@ export function Table<T>({
                     <span className="text-gray-400">
                       {sortColumn === column.key ? (
                         sortDirection === 'asc' ? (
-                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                          <svg
+                            className="h-4 w-4"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            aria-hidden="true"
+                          >
                             <path
                               fillRule="evenodd"
                               d="M14.77 12.79a.75.75 0 01-1.06-.02L10 8.832 6.29 12.77a.75.75 0 11-1.08-1.04l4.25-4.5a.75.75 0 011.08 0l4.25 4.5a.75.75 0 01-.02 1.06z"
@@ -95,7 +103,12 @@ export function Table<T>({
                             />
                           </svg>
                         ) : (
-                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                          <svg
+                            className="h-4 w-4"
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                            aria-hidden="true"
+                          >
                             <path
                               fillRule="evenodd"
                               d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
@@ -104,7 +117,12 @@ export function Table<T>({
                           </svg>
                         )
                       ) : (
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <svg
+                          className="h-4 w-4"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          aria-hidden="true"
+                        >
                           <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z" />
                         </svg>
                       )}
@@ -123,7 +141,10 @@ export function Table<T>({
               className={onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}
             >
               {columns.map((column) => (
-                <td key={column.key} className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}>
+                <td
+                  key={column.key}
+                  className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
+                >
                   {column.accessor(row)}
                 </td>
               ))}

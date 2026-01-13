@@ -38,7 +38,11 @@ export function createApp(): Express {
   app.use('/api/', limiter);
 
   // Stripe webhook requires raw body for signature verification
-  app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
+  app.post(
+    '/api/v1/webhooks/stripe',
+    express.raw({ type: 'application/json' }),
+    handleStripeWebhook
+  );
 
   // Body parsing middleware (after webhook raw handler)
   app.use(express.json());

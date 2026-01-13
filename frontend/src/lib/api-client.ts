@@ -31,10 +31,7 @@ export interface RequestOptions extends RequestInit {
 /**
  * Make an API request with authentication and business context
  */
-export async function apiRequest<T>(
-  endpoint: string,
-  options: RequestOptions = {}
-): Promise<T> {
+export async function apiRequest<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { businessId, token, ...fetchOptions } = options;
 
   const url = `${API_URL}/api/v1${endpoint}`;
