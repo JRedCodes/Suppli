@@ -34,9 +34,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      // Handle email confirmation
+      if (event === 'SIGNED_IN' && nextSession) {
+        // User confirmed their email and signed in
+        setSession(nextSession);
+        setUser(nextSession.user);
+      } else if (event === 'TOKEN_REFRESHED' && nextSession) {
+        // Session refreshed
+        setSession(nextSession);
+        setUser(nextSession.user);
+      } else {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+      }
       setLoading(false);
     });
 
@@ -59,7 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     });
 
@@ -71,8 +82,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.user && !data.session) {
       return {
         success: true,
-        message: 'Please check your email to confirm your account before signing in.',
+        message: 'Please check your email to confirm your account. Click the confirmation link in the email to complete signup.',
       };
+    }
+
+    // If session exists, email confirmation might be disabled
+    if (data.session) {
+      return { success: true, message: 'Account created successfully!' };
     }
 
     return { success: true };
