@@ -27,15 +27,27 @@ export function useProducts(filters: ProductFilters = {}) {
 
   return useQuery({
     queryKey: [...productKeys.list(filters), selectedBusinessId],
-    queryFn: () => {
+    queryFn: async () => {
       const token = session?.access_token;
       if (!token) {
         throw new Error('No authentication token available. Please sign in again.');
       }
-      return productsService.list(filters, {
+      console.log('useProducts queryFn called:', {
+        filters,
+        selectedBusinessId,
+        hasToken: !!token,
+      });
+      const result = await productsService.list(filters, {
         businessId: selectedBusinessId,
         token,
       });
+      console.log('useProducts queryFn result:', {
+        hasData: !!result,
+        dataCount: result?.data?.length || 0,
+        meta: result?.meta,
+        fullResult: result,
+      });
+      return result;
     },
     enabled: !!selectedBusinessId && !!session?.access_token,
   });

@@ -132,6 +132,18 @@ export default function ProductsListPage() {
 
   const products = data?.data || [];
 
+  // Debug logging
+  console.log('ProductsListPage render:', {
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    hasData: !!data,
+    dataType: typeof data,
+    productsCount: products.length,
+    dataStructure: data,
+    dataKeys: data ? Object.keys(data) : [],
+  });
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-center justify-between">
