@@ -7,18 +7,35 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setSubmitting(true);
 
-    const action = mode === 'signin' ? signIn : signUp;
-    const result = await action(email, password);
-
-    if (result.error) {
-      setError(result.error);
+    if (mode === 'signin') {
+      const result = await signIn(email, password);
+      if (result.error) {
+        setError(result.error);
+      }
+    } else {
+      const result = await signUp(email, password);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.success) {
+        setSuccess(result.message || 'Account created successfully! You can now sign in.');
+        // Clear form after successful signup
+        setEmail('');
+        setPassword('');
+        // Optionally switch to signin mode after a delay
+        setTimeout(() => {
+          setMode('signin');
+          setSuccess(null);
+        }, 3000);
+      }
     }
     setSubmitting(false);
   };
@@ -60,6 +77,7 @@ export default function LoginPage() {
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
+          {success && <p className="text-sm text-green-600">{success}</p>}
           <button
             type="submit"
             disabled={submitting || loading}
