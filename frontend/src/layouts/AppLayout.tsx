@@ -4,7 +4,7 @@ import { useBusiness } from '../hooks/useBusiness';
 
 export default function AppLayout() {
   const { signOut, user } = useAuth();
-  const { businesses, selectedBusinessId, setSelectedBusinessId } = useBusiness();
+  const { businesses, selectedBusinessId, setSelectedBusinessId, loading: businessesLoading } = useBusiness();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -42,13 +42,20 @@ export default function AppLayout() {
                 <select
                   value={selectedBusinessId}
                   onChange={(e) => setSelectedBusinessId(e.target.value)}
-                  className="mt-1 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  disabled={businessesLoading || businesses.length === 0}
+                  className="mt-1 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 >
-                  {businesses.map((biz) => (
-                    <option key={biz.id} value={biz.id}>
-                      {biz.name}
-                    </option>
-                  ))}
+                  {businessesLoading ? (
+                    <option>Loading...</option>
+                  ) : businesses.length === 0 ? (
+                    <option>No businesses</option>
+                  ) : (
+                    businesses.map((biz) => (
+                      <option key={biz.id} value={biz.id}>
+                        {biz.name}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
               <div className="text-sm text-gray-700">
