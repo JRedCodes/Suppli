@@ -8,7 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { Loading } from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Alert } from '../components/ui/Alert';
-import { Modal, ModalFooter, ModalBody } from '../components/ui/Modal';
+import { Modal } from '../components/ui/Modal';
 import type { Product } from '../services/products.service';
 
 export default function ProductsListPage() {
@@ -158,19 +158,25 @@ export default function ProductsListPage() {
       )}
 
       {archiveTarget && (
-        <Modal isOpen={!!archiveTarget} onClose={() => setArchiveTarget(null)} title="Archive Product">
-          <ModalHeader title={`Archive ${archiveTarget.name}?`} />
-          <ModalBody>
-            <p>Are you sure you want to archive this product? This action cannot be undone.</p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="secondary" onClick={() => setArchiveTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleArchive}>
-              Archive
-            </Button>
-          </ModalFooter>
+        <Modal
+          isOpen={!!archiveTarget}
+          onClose={() => setArchiveTarget(null)}
+          title={`Archive ${archiveTarget.name}?`}
+          size="md"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Are you sure you want to archive this product? Archived products won't appear in order generation.
+            </p>
+            <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+              <Button variant="secondary" onClick={() => setArchiveTarget(null)}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={handleArchive}>
+                Archive
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </div>
