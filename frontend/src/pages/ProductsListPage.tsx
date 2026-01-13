@@ -119,7 +119,13 @@ export default function ProductsListPage() {
   if (error) {
     return (
       <div className="p-6">
-        <Alert variant="error">Failed to load products. Please try again. {error.message}</Alert>
+        <Alert variant="error" title="Failed to load products">
+          <p>{error.message}</p>
+          <p className="text-sm mt-2">Please check your browser console for more details.</p>
+          <Button variant="secondary" onClick={() => window.location.reload()} className="mt-4">
+            Reload Page
+          </Button>
+        </Alert>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +33,7 @@ export default function ProductFormPage() {
   const createVendorProduct = useCreateVendorProduct();
   const { data: vendorsData } = useVendors({ archived: false });
   const vendors = vendorsData?.data || [];
+  const [formError, setFormError] = useState<string | null>(null);
 
   const {
     register,
@@ -62,6 +63,7 @@ export default function ProductFormPage() {
   }, [isEditMode, productData, reset]);
 
   const onSubmit = async (data: ProductFormData) => {
+    setFormError(null);
     try {
       if (isEditMode && productId) {
         await updateProduct.mutateAsync({ productId, data: data as UpdateProductRequest });
@@ -82,15 +84,20 @@ export default function ProductFormPage() {
               unit_type: data.unit_type || 'unit',
               sku: data.sku || undefined,
             });
-          } catch (linkError) {
+          } catch (linkError: any) {
             console.error('Failed to link product to vendor:', linkError);
-            // Product was created, so we still navigate - user can link manually later
+            // Product was created, but linking failed - show warning but still navigate
+            setFormError(`Product created, but failed to link to vendor: ${linkError?.message || 'Unknown error'}`);
+            // Still navigate after a short delay
+            setTimeout(() => navigate('/products'), 2000);
+            return;
           }
         }
       }
       navigate('/products');
     } catch (error: any) {
       console.error('Failed to save product:', error);
+      setFormError(error?.message || 'Failed to save product. Please try again.');
     }
   };
 
@@ -119,6 +126,7 @@ export default function ProductFormPage() {
       </h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {formError && <Alert variant="error">{formError}</Alert>}
         <Input label="Product Name" {...register('name')} error={errors.name?.message} required />
 
         <Input
