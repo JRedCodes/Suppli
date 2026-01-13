@@ -136,7 +136,7 @@ export default function ProductsListPage() {
   console.log('ProductsListPage render:', {
     isLoading,
     hasError: !!error,
-    errorMessage: error?.message,
+    errorMessage: error instanceof Error ? error.message : String(error),
     hasData: !!data,
     dataType: typeof data,
     productsCount: products.length,
