@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { verifyJWT, resolveBusinessContext, requireManager, validateBody } from './middleware';
 import { AuthRequest } from './types/auth';
 import { sendSuccess } from './lib/response';
+import ordersRoutes from './routes/orders.routes';
 
 /**
  * Creates and configures the Express application
@@ -46,13 +47,16 @@ export function createApp(): Express {
     });
   });
 
-  // API routes will be added here
+  // API routes
   app.get('/api/v1', (_req: Request, res: Response) => {
     res.json({
       message: 'Suppli API v1',
       version: '0.1.0',
     });
   });
+
+  // Orders routes
+  app.use('/api/v1/orders', ordersRoutes);
 
   // Protected test endpoint (for testing auth middleware)
   app.get(

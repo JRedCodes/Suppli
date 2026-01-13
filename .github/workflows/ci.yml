@@ -32,6 +32,12 @@ jobs:
       - name: Type check
         working-directory: ./server
         run: npm run type-check
+      
+      - name: Run tests
+        working-directory: ./server
+        run: npm run test:run
+        env:
+          NODE_ENV: test
 
   frontend:
     name: Frontend Tests
