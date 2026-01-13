@@ -12,7 +12,7 @@
  * For now, they test the structure and validation.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../app';
 

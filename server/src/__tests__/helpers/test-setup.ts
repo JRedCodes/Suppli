@@ -2,7 +2,7 @@
  * Test setup and utilities
  */
 
-import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
+import { vi } from 'vitest';
 
 /**
  * Mock Supabase client for testing

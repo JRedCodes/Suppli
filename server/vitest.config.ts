@@ -8,6 +8,7 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
     },
+    envPrefix: ['VITE_', 'SUPABASE_'], // Only load specific env vars
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
