@@ -44,6 +44,20 @@ router.get(
 );
 
 /**
+ * Archive a product (must come before /:productId route)
+ * PATCH /api/v1/products/:productId/archive
+ * Requires: Manager or Owner
+ */
+router.patch(
+  '/:productId/archive',
+  verifyJWT,
+  resolveBusinessContext,
+  requireManager,
+  validateParams(productIdParamSchema),
+  archiveProductHandler
+);
+
+/**
  * Get a single product
  * GET /api/v1/products/:productId
  * Requires: Staff, Manager, or Owner
@@ -83,20 +97,6 @@ router.put(
   validateParams(productIdParamSchema),
   validateBody(updateProductSchema),
   updateProductHandler
-);
-
-/**
- * Archive a product
- * PATCH /api/v1/products/:productId/archive
- * Requires: Manager or Owner
- */
-router.patch(
-  '/:productId/archive',
-  verifyJWT,
-  resolveBusinessContext,
-  requireManager,
-  validateParams(productIdParamSchema),
-  archiveProductHandler
 );
 
 /**
