@@ -64,13 +64,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Provide more helpful error messages
       let errorMessage = error.message;
       
-      if (error.message.includes('Invalid login credentials')) {
-        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (error.message.includes('Email not confirmed')) {
-        errorMessage = 'Please confirm your email address before signing in. Check your inbox for the confirmation link.';
-      } else if (error.message.includes('Email rate limit exceeded')) {
+      // Check for specific error codes
+      if (error.status === 400) {
+        if (error.message.includes('Invalid login credentials') || error.message.includes('invalid_credentials')) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (error.message.includes('Email not confirmed') || error.message.includes('email_not_confirmed')) {
+          errorMessage = 'Please confirm your email address before signing in. Check your inbox for the confirmation link.';
+        }
+      } else if (error.status === 429 || error.message.includes('rate limit')) {
         errorMessage = 'Too many sign-in attempts. Please wait a few minutes and try again.';
       }
+      
+      // Log error for debugging (remove in production)
+      console.error('Sign-in error:', {
+        message: error.message,
+        status: error.status,
+        originalError: error,
+      });
       
       return { error: errorMessage };
     }
@@ -80,6 +90,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data.session) {
       setSession(data.session);
       setUser(data.session.user);
+      console.log('Sign-in successful:', { userId: data.session.user.id, email: data.session.user.email });
+    } else {
+      console.warn('Sign-in succeeded but no session returned');
     }
     
     return {};
