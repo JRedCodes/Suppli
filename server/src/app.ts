@@ -2,6 +2,8 @@ import express, { Express, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import { verifyJWT, resolveBusinessContext, requireManager } from './middleware';
+import { AuthRequest } from './types/auth';
 
 /**
  * Creates and configures the Express application
@@ -50,8 +52,37 @@ export function createApp(): Express {
     });
   });
 
-  // Error handling middleware (basic)
+  // Protected test endpoint (for testing auth middleware)
+  app.get(
+    '/api/v1/test-auth',
+    verifyJWT,
+    resolveBusinessContext,
+    requireManager,
+    (req: Request, res: Response) => {
+      const authReq = req as AuthRequest;
+      res.json({
+        message: 'Authentication successful',
+        userId: authReq.userId,
+        businessId: authReq.businessId,
+        role: authReq.role,
+      });
+    }
+  );
+
+  // Error handling middleware
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    // Handle AppError instances (custom errors with status codes)
+    if ('statusCode' in err && 'code' in err) {
+      const appError = err as { statusCode: number; code: string; message: string };
+      return res.status(appError.statusCode).json({
+        error: {
+          code: appError.code,
+          message: appError.message,
+        },
+      });
+    }
+
+    // Handle unexpected errors
     console.error('Error:', err);
     res.status(500).json({
       error: {
