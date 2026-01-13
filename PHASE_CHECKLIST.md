@@ -19,7 +19,7 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 - [x] 2.4 Additional Schema Tables ✅ (included in 2.2)
 
 ## Phase 3 — Backend Core Implementation
-- [ ] 3.1 Authentication & Authorization Middleware
+- [x] 3.1 Authentication & Authorization Middleware ✅
 - [ ] 3.2 API Contracts & Validation
 - [ ] 3.3 Orders Domain Logic
 - [ ] 3.4 Orders API Endpoints
@@ -67,15 +67,14 @@ Quick reference checklist for tracking implementation progress. Use this alongsi
 ---
 
 ## Current Phase
-**Status:** Phase 2 Complete ✅ → Phase 3 Next
+**Status:** Phase 3.1 Complete ✅ → Phase 3.2 Next
 
 **Next Steps:**
 1. ✅ Phase 0 Complete: Repository initialized and configured
 2. ✅ Phase 1 Complete: Project scaffolding done
 3. ✅ Phase 2 Complete: Database schema and RLS policies implemented
-4. **ACTION REQUIRED**: Run RLS migrations (007-012) in Supabase SQL Editor
-5. **ACTION REQUIRED**: Test RLS policies (see docs/RLS_TESTING.md)
-6. Proceed to Phase 3: Backend Core Implementation
+4. ✅ Phase 3.1 Complete: Authentication & Authorization Middleware implemented
+5. Proceed to Phase 3.2: API Contracts & Validation
 
 ---
 
