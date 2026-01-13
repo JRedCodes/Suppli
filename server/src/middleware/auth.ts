@@ -42,8 +42,9 @@ export async function verifyJWT(req: Request, _res: Response, next: NextFunction
       throw new UnauthorizedError('Invalid or expired token');
     }
 
-    // Attach user ID to request
+    // Attach user ID and user object to request
     (req as AuthRequest).userId = user.id;
+    (req as AuthRequest).user = user;
 
     next();
   } catch (error) {
