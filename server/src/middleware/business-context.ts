@@ -41,7 +41,7 @@ function extractBusinessId(req: Request): string | null {
  */
 export async function resolveBusinessContext(
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction
 ): Promise<void> {
   try {

@@ -70,16 +70,17 @@ export function createApp(): Express {
   );
 
   // Error handling middleware
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
     // Handle AppError instances (custom errors with status codes)
     if ('statusCode' in err && 'code' in err) {
       const appError = err as { statusCode: number; code: string; message: string };
-      return res.status(appError.statusCode).json({
+      res.status(appError.statusCode).json({
         error: {
           code: appError.code,
           message: appError.message,
         },
       });
+      return;
     }
 
     // Handle unexpected errors

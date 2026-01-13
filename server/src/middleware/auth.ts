@@ -24,7 +24,7 @@ function extractToken(req: Request): string | null {
  * Middleware to verify JWT token and extract user ID
  * Attaches userId to request object
  */
-export async function verifyJWT(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function verifyJWT(req: Request, _res: Response, next: NextFunction): Promise<void> {
   try {
     const token = extractToken(req);
 

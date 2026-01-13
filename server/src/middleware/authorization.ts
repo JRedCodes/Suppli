@@ -13,7 +13,7 @@ import { AuthRequest, UserRole } from '../types/auth';
  * @returns Middleware function
  */
 export function requireRole(...allowedRoles: UserRole[]) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: Request, _res: Response, next: NextFunction): void => {
     const authReq = req as AuthRequest;
 
     // Ensure business context is resolved
