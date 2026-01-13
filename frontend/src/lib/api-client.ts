@@ -1,0 +1,141 @@
+/**
+ * API client for backend requests
+ * Handles authentication, business context, and error formatting
+ */
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+export interface ApiError {
+  code: string;
+  message: string;
+  statusCode?: number;
+}
+
+export class ApiClientError extends Error {
+  code: string;
+  statusCode?: number;
+
+  constructor(message: string, code: string, statusCode?: number) {
+    super(message);
+    this.name = 'ApiClientError';
+    this.code = code;
+    this.statusCode = statusCode;
+  }
+}
+
+export interface RequestOptions extends RequestInit {
+  businessId?: string;
+  token?: string;
+}
+
+/**
+ * Make an API request with authentication and business context
+ */
+export async function apiRequest<T>(
+  endpoint: string,
+  options: RequestOptions = {}
+): Promise<T> {
+  const { businessId, token, ...fetchOptions } = options;
+
+  const url = `${API_URL}/api/v1${endpoint}`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(fetchOptions.headers as Record<string, string>),
+  };
+
+  // Add authentication token
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  // Add business context
+  if (businessId) {
+    headers['X-Business-Id'] = businessId;
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const error = data.error || { code: 'UNKNOWN_ERROR', message: 'An error occurred' };
+      throw new ApiClientError(error.message, error.code, response.status);
+    }
+
+    // Return data from standard response format: { data: ... }
+    return data.data as T;
+  } catch (error) {
+    if (error instanceof ApiClientError) {
+      throw error;
+    }
+
+    // Network or other errors
+    throw new ApiClientError(
+      error instanceof Error ? error.message : 'Network error',
+      'NETWORK_ERROR'
+    );
+  }
+}
+
+/**
+ * GET request
+ */
+export async function apiGet<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  return apiRequest<T>(endpoint, { ...options, method: 'GET' });
+}
+
+/**
+ * POST request
+ */
+export async function apiPost<T>(
+  endpoint: string,
+  body?: unknown,
+  options: RequestOptions = {}
+): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    ...options,
+    method: 'POST',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+/**
+ * PUT request
+ */
+export async function apiPut<T>(
+  endpoint: string,
+  body?: unknown,
+  options: RequestOptions = {}
+): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    ...options,
+    method: 'PUT',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+/**
+ * PATCH request
+ */
+export async function apiPatch<T>(
+  endpoint: string,
+  body?: unknown,
+  options: RequestOptions = {}
+): Promise<T> {
+  return apiRequest<T>(endpoint, {
+    ...options,
+    method: 'PATCH',
+    body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+/**
+ * DELETE request
+ */
+export async function apiDelete<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  return apiRequest<T>(endpoint, { ...options, method: 'DELETE' });
+}

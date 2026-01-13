@@ -2,6 +2,8 @@
  * Authentication and authorization types
  */
 
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+
 export type UserRole = 'owner' | 'manager' | 'staff';
 
 /**
@@ -12,6 +14,11 @@ export interface AuthRequest extends Express.Request {
    * Authenticated user ID from JWT
    */
   userId?: string;
+
+  /**
+   * Supabase user object
+   */
+  user?: SupabaseUser;
 
   /**
    * Current business context (from request header or query param)

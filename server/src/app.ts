@@ -8,6 +8,7 @@ import { AuthRequest } from './types/auth';
 import { sendSuccess } from './lib/response';
 import ordersRoutes from './routes/orders.routes';
 import paymentsRoutes from './routes/payments.routes';
+import onboardingRoutes from './routes/onboarding.routes';
 import { handleStripeWebhook } from './controllers/payments.controller';
 
 /**
@@ -64,6 +65,8 @@ export function createApp(): Express {
   app.use('/api/v1/orders', ordersRoutes);
   // Payments routes
   app.use('/api/v1/payments', paymentsRoutes);
+  // Onboarding routes
+  app.use('/api/v1/onboarding', onboardingRoutes);
 
   // Protected test endpoint (for testing auth middleware)
   app.get(
