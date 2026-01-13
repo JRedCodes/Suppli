@@ -2,11 +2,9 @@
  * Vendors controller - request handlers for vendor endpoints
  */
 
-import { Request, Response } from 'express';
-import { AuthRequest } from '../types/auth';
 import { Request, Response, NextFunction } from 'express';
-import { sendSuccess } from '../lib/response';
 import { AuthRequest } from '../types/auth';
+import { sendSuccess } from '../lib/response';
 import * as vendorsService from '../services/vendors.service';
 import type { CreateVendorData, UpdateVendorData, VendorFilters } from '../services/vendors.service';
 
