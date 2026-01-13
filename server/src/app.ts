@@ -7,6 +7,8 @@ import { verifyJWT, resolveBusinessContext, requireManager, validateBody } from 
 import { AuthRequest } from './types/auth';
 import { sendSuccess } from './lib/response';
 import ordersRoutes from './routes/orders.routes';
+import paymentsRoutes from './routes/payments.routes';
+import { handleStripeWebhook } from './controllers/payments.controller';
 
 /**
  * Creates and configures the Express application
@@ -34,7 +36,10 @@ export function createApp(): Express {
   });
   app.use('/api/', limiter);
 
-  // Body parsing middleware
+  // Stripe webhook requires raw body for signature verification
+  app.post('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
+
+  // Body parsing middleware (after webhook raw handler)
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
@@ -57,6 +62,8 @@ export function createApp(): Express {
 
   // Orders routes
   app.use('/api/v1/orders', ordersRoutes);
+  // Payments routes
+  app.use('/api/v1/payments', paymentsRoutes);
 
   // Protected test endpoint (for testing auth middleware)
   app.get(
