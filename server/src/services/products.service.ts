@@ -29,9 +29,14 @@ export async function listProducts(
   // Default behavior: if archived is not specified, show only non-archived products
   // If archived === false, explicitly show only non-archived
   // If archived === true, show only archived
-  if (filters.archived === false || filters.archived === undefined) {
+  // Handle both boolean and string values (in case validation didn't convert)
+  const archivedFilter = filters.archived;
+  const isArchivedFalse = archivedFilter === false || archivedFilter === 'false' || archivedFilter === undefined;
+  const isArchivedTrue = archivedFilter === true || archivedFilter === 'true';
+  
+  if (isArchivedFalse) {
     query = query.is('archived_at', null);
-  } else if (filters.archived === true) {
+  } else if (isArchivedTrue) {
     query = query.not('archived_at', 'is', null);
   }
 
