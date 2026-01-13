@@ -1,0 +1,136 @@
+/**
+ * Orders controller
+ */
+
+import { Request, Response } from 'express';
+import { AuthRequest } from '../types/auth';
+import { sendSuccess, sendPaginated } from '../lib/response';
+import { generateOrder } from '../services/order-generation.service';
+import {
+  createOrderFromGeneration,
+  getOrderById,
+  listOrders,
+  updateOrderLineQuantity,
+  approveOrder,
+  sendOrder,
+} from '../services/orders.service';
+
+/**
+ * Generate a new order
+ * POST /api/v1/orders/generate
+ */
+export async function generateOrderHandler(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthRequest;
+  const { orderPeriodStart, orderPeriodEnd, mode, vendorIds } = req.body;
+
+  // Generate order recommendations
+  const generationResult = await generateOrder({
+    businessId: authReq.businessId!,
+    orderPeriodStart: new Date(orderPeriodStart),
+    orderPeriodEnd: new Date(orderPeriodEnd),
+    mode: mode || 'guided',
+    vendorIds,
+  });
+
+  // Create order in database
+  const orderId = await createOrderFromGeneration(
+    authReq.businessId!,
+    authReq.userId!,
+    new Date(orderPeriodStart),
+    new Date(orderPeriodEnd),
+    mode || 'guided',
+    generationResult
+  );
+
+  sendSuccess(
+    res,
+    {
+      orderId,
+      status: mode === 'simulation' ? 'draft' : 'needs_review',
+      summary: generationResult.summary,
+    },
+    201
+  );
+}
+
+/**
+ * List orders
+ * GET /api/v1/orders
+ */
+export async function listOrdersHandler(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthRequest;
+  const { status, vendorId, dateFrom, dateTo, page, pageSize } = req.query;
+
+  const result = await listOrders(authReq.businessId!, {
+    status: status as string | undefined,
+    vendorId: vendorId as string | undefined,
+    dateFrom: dateFrom as string | undefined,
+    dateTo: dateTo as string | undefined,
+    page: page ? Number(page) : undefined,
+    pageSize: pageSize ? Number(pageSize) : undefined,
+  });
+
+  sendPaginated(res, result.orders, {
+    page: result.page,
+    pageSize: result.pageSize,
+    total: result.total,
+    totalPages: result.totalPages,
+  });
+}
+
+/**
+ * Get order by ID
+ * GET /api/v1/orders/:id
+ */
+export async function getOrderHandler(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthRequest;
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const order = await getOrderById(authReq.businessId!, id);
+  sendSuccess(res, order);
+}
+
+/**
+ * Update order line quantity
+ * PATCH /api/v1/orders/:id/lines/:lineId
+ */
+export async function updateOrderLineHandler(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthRequest;
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
+  const { finalQuantity } = req.body;
+
+  const updated = await updateOrderLineQuantity(
+    authReq.businessId!,
+    id,
+    lineId,
+    finalQuantity,
+    authReq.userId!
+  );
+
+  sendSuccess(res, updated);
+}
+
+/**
+ * Approve order
+ * POST /api/v1/orders/:id/approve
+ */
+export async function approveOrderHandler(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthRequest;
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const order = await approveOrder(authReq.businessId!, id, authReq.userId!);
+  sendSuccess(res, order);
+}
+
+/**
+ * Send order
+ * POST /api/v1/orders/:id/send
+ */
+export async function sendOrderHandler(req: Request, res: Response): Promise<void> {
+  const authReq = req as AuthRequest;
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const order = await sendOrder(authReq.businessId!, id, authReq.userId!);
+  sendSuccess(res, order);
+}

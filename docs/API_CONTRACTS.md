@@ -387,9 +387,241 @@ curl -X POST http://localhost:3001/api/v1/test-validation \
 
 ---
 
+---
+
+## Orders API Endpoints
+
+### Generate Order
+
+**POST** `/api/v1/orders/generate`
+
+Generate a new order with recommendations based on sales data, previous orders, and promotions.
+
+**Authentication:** Required (Manager or Owner)
+
+**Request Body:**
+```json
+{
+  "orderPeriodStart": "2026-01-01",
+  "orderPeriodEnd": "2026-01-07",
+  "mode": "guided",
+  "vendorIds": ["uuid-1", "uuid-2"] // Optional
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "orderId": "uuid",
+    "status": "needs_review",
+    "summary": {
+      "totalProducts": 25,
+      "highConfidence": 10,
+      "moderateConfidence": 8,
+      "needsReview": 7
+    }
+  }
+}
+```
+
+---
+
+### List Orders
+
+**GET** `/api/v1/orders`
+
+List orders with optional filters and pagination.
+
+**Authentication:** Required (Staff, Manager, or Owner)
+
+**Query Parameters:**
+- `status` (optional): Filter by status (`draft`, `needs_review`, `approved`, `sent`, `cancelled`)
+- `vendorId` (optional): Filter by vendor ID
+- `dateFrom` (optional): Filter orders from date (YYYY-MM-DD)
+- `dateTo` (optional): Filter orders to date (YYYY-MM-DD)
+- `page` (optional): Page number (default: 1)
+- `pageSize` (optional): Items per page (default: 25, max: 100)
+
+**Response:**
+```json
+{
+  "data": [
+    {
+      "id": "uuid",
+      "business_id": "uuid",
+      "order_period_start": "2026-01-01",
+      "order_period_end": "2026-01-07",
+      "status": "needs_review",
+      "mode": "guided",
+      "created_at": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 25,
+    "total": 50,
+    "totalPages": 2
+  }
+}
+```
+
+---
+
+### Get Order Detail
+
+**GET** `/api/v1/orders/:id`
+
+Get detailed information about a specific order, including vendor orders and order lines.
+
+**Authentication:** Required (Staff, Manager, or Owner)
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "business_id": "uuid",
+    "order_period_start": "2026-01-01",
+    "order_period_end": "2026-01-07",
+    "status": "needs_review",
+    "mode": "guided",
+    "vendor_orders": [
+      {
+        "id": "uuid",
+        "vendor_id": "uuid",
+        "vendors": {
+          "name": "Vendor Name"
+        },
+        "order_lines": [
+          {
+            "id": "uuid",
+            "product_id": "uuid",
+            "recommended_quantity": 10.5,
+            "final_quantity": 10.5,
+            "unit_type": "unit",
+            "confidence_level": "high",
+            "explanation": "Based on recent sales data.",
+            "products": {
+              "name": "Product Name"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Update Order Line Quantity
+
+**PATCH** `/api/v1/orders/:id/lines/:lineId`
+
+Update the final quantity for a specific order line. Creates an audit event.
+
+**Authentication:** Required (Staff, Manager, or Owner)
+
+**Request Body:**
+```json
+{
+  "finalQuantity": 12.5
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "final_quantity": 12.5,
+    "recommended_quantity": 10.5,
+    "unit_type": "unit",
+    "confidence_level": "high",
+    "explanation": "Based on recent sales data."
+  }
+}
+```
+
+**Errors:**
+- `404 NOT_FOUND` - Order or order line not found
+- `400` - Cannot update sent or cancelled orders
+
+---
+
+### Approve Order
+
+**POST** `/api/v1/orders/:id/approve`
+
+Approve an order, changing status from `draft` or `needs_review` to `approved`.
+
+**Authentication:** Required (Manager or Owner)
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "status": "approved",
+    "approved_at": "2026-01-01T12:00:00Z",
+    "approved_by": "user-uuid"
+  }
+}
+```
+
+**Errors:**
+- `404 NOT_FOUND` - Order not found
+- `400` - Order cannot be approved (wrong status)
+
+---
+
+### Send Order
+
+**POST** `/api/v1/orders/:id/send`
+
+Mark an order as sent, changing status from `approved` to `sent`.
+
+**Authentication:** Required (Manager or Owner)
+
+**Response:**
+```json
+{
+  "data": {
+    "id": "uuid",
+    "status": "sent"
+  }
+}
+```
+
+**Errors:**
+- `404 NOT_FOUND` - Order not found
+- `400` - Order must be approved before sending
+
+---
+
+## Order State Transitions
+
+Orders follow this state flow:
+
+```
+draft → needs_review → approved → sent
+  ↓                      ↓
+cancelled            cancelled
+```
+
+**Rules:**
+- Orders start as `draft` (simulation mode) or `needs_review` (guided/full_auto)
+- Only `draft` or `needs_review` orders can be approved
+- Only `approved` orders can be sent
+- Orders can be cancelled from any state (except `sent`)
+
+---
+
 ## Next Steps
 
 - See `docs/AUTHENTICATION.md` for authentication details
+- See `docs/ORDER_GENERATION.md` for order generation algorithm
 - See `server/src/validators/` for available validation schemas
 - See `server/src/middleware/validation.ts` for validation middleware
 - See `server/src/lib/response.ts` for response utilities
