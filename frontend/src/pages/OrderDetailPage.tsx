@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine, useSaveDraftOrder } from '../hooks/useOrders';
+import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine, useSaveDraftOrder, useDeleteOrder } from '../hooks/useOrders';
 import { useProducts, useVendorProducts } from '../hooks/useProducts';
 import { useBusiness } from '../hooks/useBusiness';
 import { Button } from '../components/ui/Button';
@@ -31,6 +31,7 @@ export default function OrderDetailPage() {
   const addLine = useAddOrderLine();
   const removeLine = useRemoveOrderLine();
   const saveDraft = useSaveDraftOrder();
+  const deleteOrder = useDeleteOrder();
   const { data: productsData } = useProducts({ archived: false });
 
   // Check if this is a draft order
@@ -441,6 +442,16 @@ export default function OrderDetailPage() {
                 loading={sendOrder.isPending}
               >
                 Send Order
+              </Button>
+            )}
+            {canDelete && (
+              <Button
+                variant="error"
+                onClick={() => setShowDeleteModal(true)}
+                disabled={deleteOrder.isPending}
+                loading={deleteOrder.isPending}
+              >
+                Delete Order
               </Button>
             )}
           </div>

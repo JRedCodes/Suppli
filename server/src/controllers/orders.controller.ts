@@ -16,6 +16,7 @@ import {
   sendOrder,
   addOrderLine,
   removeOrderLine,
+  deleteOrder,
 } from '../services/orders.service';
 import { supabaseAdmin } from '../lib/supabase';
 
@@ -222,6 +223,22 @@ export async function sendOrderHandler(req: Request, res: Response, next: NextFu
 
     const order = await sendOrder(authReq.businessId!, id, authReq.userId!);
     sendSuccess(res, order);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Delete order
+ * DELETE /api/v1/orders/:id
+ */
+export async function deleteOrderHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    await deleteOrder(authReq.businessId!, id, authReq.userId!);
+    sendSuccess(res, null, 204);
   } catch (error) {
     next(error);
   }

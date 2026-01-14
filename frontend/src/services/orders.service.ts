@@ -212,6 +212,13 @@ export const ordersService = {
   },
 
   /**
+   * Delete order
+   */
+  delete: async (orderId: string, options: RequestOptions): Promise<void> => {
+    return apiDelete<void>(`/orders/${orderId}`, options);
+  },
+
+  /**
    * Add order line
    */
   addLine: async (

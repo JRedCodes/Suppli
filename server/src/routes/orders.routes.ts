@@ -21,6 +21,7 @@ import {
   sendOrderHandler,
   addOrderLineHandler,
   removeOrderLineHandler,
+  deleteOrderHandler,
 } from '../controllers/orders.controller';
 import {
   generateOrderSchema,
@@ -155,6 +156,21 @@ router.post(
   requireManager,
   validateParams(orderIdParamSchema),
   sendOrderHandler
+);
+
+/**
+ * Delete order
+ * DELETE /api/v1/orders/:id
+ * Requires: Manager or Owner
+ * Only allows deletion of draft or cancelled orders
+ */
+router.delete(
+  '/:id',
+  verifyJWT,
+  resolveBusinessContext,
+  requireManager,
+  validateParams(orderIdParamSchema),
+  deleteOrderHandler
 );
 
 export default router;

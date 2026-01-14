@@ -433,6 +433,51 @@ export async function approveOrder(businessId: string, orderId: string, userId: 
 }
 
 /**
+ * Delete order
+ * Only allows deletion of draft or cancelled orders
+ */
+export async function deleteOrder(businessId: string, orderId: string, userId: string) {
+  const supabase = supabaseAdmin;
+
+  // Get order
+  const { data: order, error: getError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('id', orderId)
+    .single();
+
+  if (getError || !order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  // Only allow deletion of draft or cancelled orders
+  if (order.status !== 'draft' && order.status !== 'cancelled') {
+    throw new Error(
+      `Cannot delete order with status: ${order.status}. Only draft or cancelled orders can be deleted.`
+    );
+  }
+
+  // Create order event before deletion
+  await supabase.from('order_events').insert({
+    business_id: businessId,
+    order_id: orderId,
+    event_type: 'deleted',
+    actor_type: 'user',
+    actor_id: userId,
+    before_snapshot: { status: order.status },
+    after_snapshot: { status: 'deleted' },
+  });
+
+  // Delete order (cascade will handle order_lines and vendor_orders)
+  const { error: deleteError } = await supabase.from('orders').delete().eq('id', orderId).eq('business_id', businessId);
+
+  if (deleteError) {
+    throw new Error(`Failed to delete order: ${deleteError.message}`);
+  }
+}
+
+/**
  * Send order (marks as sent)
  */
 export async function sendOrder(businessId: string, orderId: string, userId: string) {
