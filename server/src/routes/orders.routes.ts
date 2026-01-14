@@ -13,6 +13,7 @@ import {
 } from '../middleware';
 import {
   generateOrderHandler,
+  saveDraftOrderHandler,
   listOrdersHandler,
   getOrderHandler,
   updateOrderLineHandler,
@@ -23,6 +24,7 @@ import {
 } from '../controllers/orders.controller';
 import {
   generateOrderSchema,
+  saveDraftOrderSchema,
   listOrdersQuerySchema,
   updateOrderLineSchema,
   orderIdParamSchema,
