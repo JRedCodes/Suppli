@@ -93,16 +93,19 @@ export default function OrderDetailPage() {
         return;
       }
 
+      // For existing products, use the unit_type from vendor_product
+      // For new products, use the selected unit_type
+      const unitType = addProductForm.useExisting && vendorProductData?.data?.[0]?.unit_type
+        ? vendorProductData.data[0].unit_type
+        : addProductForm.unitType;
+
       const request: AddOrderLineRequest = {
         vendorOrderId,
         productName: addProductForm.productName.trim(),
         quantity,
-        unitType: addProductForm.unitType,
+        unitType,
+        productId: addProductForm.useExisting && addProductForm.productId ? addProductForm.productId : undefined,
       };
-
-      if (addProductForm.useExisting && addProductForm.productId) {
-        request.productId = addProductForm.productId;
-      }
 
       await addLine.mutateAsync({ orderId, data: request });
       setShowAddProductModal(null);
