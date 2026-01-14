@@ -213,10 +213,10 @@ export default function OrderDetailPage() {
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
 
   // Calculate summary stats
-  const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + vo.order_lines.length, 0) || 0;
+  const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + (vo.order_lines?.length || 0), 0) || 0;
   const needsReviewCount =
     order.vendor_orders?.reduce(
-      (sum, vo) => sum + vo.order_lines.filter((line) => line.confidence_level === 'needs_review').length,
+      (sum, vo) => sum + (vo.order_lines?.filter((line) => line.confidence_level === 'needs_review').length || 0),
       0
     ) || 0;
 
@@ -328,16 +328,24 @@ export default function OrderDetailPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {vendorOrder.order_lines.map((line) => (
-                      <OrderLineRow
-                        key={line.id}
-                        line={line}
-                        onQuantityChange={handleQuantityChange}
-                        onConfidenceChange={!isReadOnly ? handleConfidenceChange : undefined}
-                        onRemove={!isReadOnly ? handleRemoveLine : undefined}
-                        disabled={isReadOnly || updateLine.isPending || removeLine.isPending}
-                      />
-                    ))}
+                    {vendorOrder.order_lines && vendorOrder.order_lines.length > 0 ? (
+                      vendorOrder.order_lines.map((line) => (
+                        <OrderLineRow
+                          key={line.id}
+                          line={line}
+                          onQuantityChange={handleQuantityChange}
+                          onConfidenceChange={!isReadOnly ? handleConfidenceChange : undefined}
+                          onRemove={!isReadOnly ? handleRemoveLine : undefined}
+                          disabled={isReadOnly || updateLine.isPending || removeLine.isPending}
+                        />
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={isReadOnly ? 5 : 6} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No products in this vendor's order
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
