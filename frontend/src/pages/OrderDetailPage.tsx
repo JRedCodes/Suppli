@@ -69,6 +69,18 @@ export default function OrderDetailPage() {
     setAddProductForm((prev) => ({ ...prev, quantity: e.target.value }));
   }, []);
 
+  // Handler to close the add product modal
+  const handleCloseAddProductModal = useCallback(() => {
+    setShowAddProductModal(null);
+    setAddProductForm({
+      productId: '',
+      productName: '',
+      quantity: '1',
+      unitType: 'unit',
+      useExisting: true,
+    });
+  }, []);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -392,16 +404,7 @@ export default function OrderDetailPage() {
       {showAddProductModal && (
         <Modal
           isOpen={!!showAddProductModal}
-          onClose={useCallback(() => {
-            setShowAddProductModal(null);
-            setAddProductForm({
-              productId: '',
-              productName: '',
-              quantity: '1',
-              unitType: 'unit',
-              useExisting: true,
-            });
-          }, [])}
+          onClose={handleCloseAddProductModal}
           title="Add Product to Order"
           size="md"
         >
