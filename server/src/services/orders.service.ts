@@ -405,7 +405,9 @@ export async function sendOrder(businessId: string, orderId: string, userId: str
     after_snapshot: { status: 'sent' },
   });
 
-  return updated;
+  // Return the full order with vendor_orders and order_lines (same structure as getOrderById)
+  // This ensures the frontend has all the data it needs
+  return getOrderById(businessId, orderId);
 }
 
 /**
