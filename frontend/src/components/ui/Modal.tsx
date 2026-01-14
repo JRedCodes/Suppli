@@ -28,27 +28,39 @@ export function Modal({
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
   // Focus trap and escape key handling
+  // Only run when modal opens, not on every render
   useEffect(() => {
     if (!isOpen) return;
 
-    // Store the previously focused element
+    // Store the previously focused element only when modal first opens
     previousActiveElement.current = document.activeElement as HTMLElement;
 
-    // Focus the modal - but only if no input is already focused
-    // This prevents stealing focus from inputs that are being typed into
+    // Focus the modal - but only on initial open, not on re-renders
     const modal = modalRef.current;
-    if (modal && !modal.contains(document.activeElement)) {
-      const focusableElements = modal.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      const firstElement = focusableElements[0];
-      if (firstElement) {
-        // Use setTimeout to ensure this happens after any state updates
-        setTimeout(() => {
-          if (!modal.contains(document.activeElement)) {
+    if (modal) {
+      // Only focus if no element in the modal is currently focused
+      // This prevents stealing focus from inputs that are being typed into
+      const activeElement = document.activeElement;
+      const isInputFocused = modal.contains(activeElement) && 
+        (activeElement?.tagName === 'INPUT' || 
+         activeElement?.tagName === 'TEXTAREA' || 
+         activeElement?.tagName === 'SELECT');
+      
+      if (!isInputFocused) {
+        const focusableElements = modal.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0];
+        if (firstElement) {
+          // Use requestAnimationFrame to ensure this happens after any state updates
+          requestAnimationFrame(() => {
+            // Double-check that we still want to focus (user might have clicked something)
+            if (modal.contains(document.activeElement)) {
+              return; // Already focused on something in modal
+            }
             firstElement.focus();
-          }
-        }, 0);
+          });
+        }
       }
     }
 
@@ -100,12 +112,12 @@ export function Modal({
       document.removeEventListener('keydown', handleTab);
       document.body.style.overflow = '';
 
-      // Restore focus to previous element
-      if (previousActiveElement.current) {
+      // Restore focus to previous element only when modal closes
+      if (!isOpen && previousActiveElement.current) {
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]); // Remove onClose from dependencies - it shouldn't cause re-runs
 
   if (!isOpen) return null;
 

@@ -392,7 +392,7 @@ export default function OrderDetailPage() {
       {showAddProductModal && (
         <Modal
           isOpen={!!showAddProductModal}
-          onClose={() => {
+          onClose={useCallback(() => {
             setShowAddProductModal(null);
             setAddProductForm({
               productId: '',
@@ -401,7 +401,7 @@ export default function OrderDetailPage() {
               unitType: 'unit',
               useExisting: true,
             });
-          }}
+          }, [])}
           title="Add Product to Order"
           size="md"
         >
