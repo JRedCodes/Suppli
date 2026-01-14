@@ -49,6 +49,22 @@ export const vendorProductIdParamSchema = z.object({
 });
 
 export const listVendorProductsQuerySchema = z.object({
-  vendorId: uuidSchema.optional(),
-  productId: uuidSchema.optional(),
+  vendorId: z
+    .preprocess(
+      (val) => {
+        if (val === undefined || val === null || val === '') return undefined;
+        return val;
+      },
+      uuidSchema.optional()
+    )
+    .optional(),
+  productId: z
+    .preprocess(
+      (val) => {
+        if (val === undefined || val === null || val === '') return undefined;
+        return val;
+      },
+      uuidSchema.optional()
+    )
+    .optional(),
 });
