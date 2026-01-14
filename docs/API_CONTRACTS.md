@@ -395,7 +395,7 @@ curl -X POST http://localhost:3001/api/v1/test-validation \
 
 **POST** `/api/v1/orders/generate`
 
-Generate a new order with recommendations based on sales data, previous orders, and promotions.
+Generate order recommendations without saving to database. Returns recommendations that can be reviewed, edited, and then saved as draft or approved. The order is stored client-side (localStorage) until explicitly saved.
 
 **Authentication:** Required (Manager or Owner)
 
@@ -413,8 +413,31 @@ Generate a new order with recommendations based on sales data, previous orders, 
 ```json
 {
   "data": {
-    "orderId": "uuid",
-    "status": "needs_review",
+    "recommendations": {
+      "vendorOrders": [
+        {
+          "vendorId": "uuid",
+          "vendorName": "Vendor Name",
+          "orderLines": [
+            {
+              "productId": "uuid",
+              "productName": "Product Name",
+              "recommendedQuantity": 10.5,
+              "finalQuantity": 10.5,
+              "unitType": "unit",
+              "confidenceLevel": "high",
+              "explanation": "Based on recent sales data."
+            }
+          ]
+        }
+      ],
+      "summary": {
+        "totalProducts": 25,
+        "highConfidence": 10,
+        "moderateConfidence": 8,
+        "needsReview": 7
+      }
+    },
     "summary": {
       "totalProducts": 25,
       "highConfidence": 10,
@@ -424,6 +447,8 @@ Generate a new order with recommendations based on sales data, previous orders, 
   }
 }
 ```
+
+**Note:** This endpoint does NOT save the order to the database. Use `POST /api/v1/orders/draft` to save as draft, or approve directly from the UI.
 
 ---
 
