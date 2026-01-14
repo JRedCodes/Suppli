@@ -62,7 +62,34 @@ export async function apiRequest<T>(
       headers,
     });
 
-    const data = await response.json();
+    // Handle empty responses (e.g., 204 No Content for DELETE)
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    const hasJsonContent = contentType && contentType.includes('application/json');
+    
+    let data;
+    if (hasJsonContent) {
+      try {
+        data = await response.json();
+      } catch (e) {
+        // If JSON parsing fails, return undefined
+        if (response.ok) {
+          return undefined as T;
+        }
+        throw new ApiClientError('Invalid JSON response', 'INVALID_RESPONSE', response.status);
+      }
+    } else {
+      // No JSON content, but response might be OK (e.g., 201 with no body)
+      if (response.ok) {
+        return undefined as T;
+      }
+      // If not OK and no JSON, create error
+      throw new ApiClientError(`Request failed with status ${response.status}`, 'HTTP_ERROR', response.status);
+    }
 
     if (!response.ok) {
       // Handle 401 Unauthorized specifically
@@ -79,6 +106,10 @@ export async function apiRequest<T>(
     }
 
     // Return data from standard response format: { data: ... }
+    // For DELETE (204), data might be null/undefined
+    if (data === null || data === undefined) {
+      return undefined as T;
+    }
     return data.data as T;
   } catch (error) {
     if (error instanceof ApiClientError) {
