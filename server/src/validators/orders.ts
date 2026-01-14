@@ -36,7 +36,8 @@ export const listOrdersQuerySchema = z.object({
  * Update order line quantity schema
  */
 export const updateOrderLineSchema = z.object({
-  finalQuantity: z.number().positive('Quantity must be greater than 0'),
+  finalQuantity: z.number().positive('Quantity must be greater than 0').optional(),
+  confidenceLevel: z.enum(['high', 'moderate', 'needs_review']).optional(),
 });
 
 /**

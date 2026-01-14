@@ -229,12 +229,22 @@ export async function updateOrderLineQuantity(
   const beforeSnapshot = {
     recommended_quantity: orderLine.recommended_quantity,
     final_quantity: orderLine.final_quantity,
+    confidence_level: orderLine.confidence_level,
   };
+
+  // Build update payload
+  const updatePayload: { final_quantity?: number; confidence_level?: string } = {};
+  if (finalQuantity !== undefined) {
+    updatePayload.final_quantity = finalQuantity;
+  }
+  if (confidenceLevel !== undefined) {
+    updatePayload.confidence_level = confidenceLevel;
+  }
 
   // Update order line
   const { data: updated, error: updateError } = await supabaseAdmin
     .from('order_lines')
-    .update({ final_quantity: finalQuantity })
+    .update(updatePayload)
     .eq('id', lineId)
     .select()
     .single();
@@ -254,21 +264,12 @@ export async function updateOrderLineQuantity(
     after_snapshot: {
       recommended_quantity: updated.recommended_quantity,
       final_quantity: updated.final_quantity,
+      confidence_level: updated.confidence_level,
     },
   });
 
-  // Record learning from this edit (non-blocking)
-  // Only learn if the quantity actually changed
-  const recommendedQty = Number(orderLine.recommended_quantity);
-  const finalQty = Number(finalQuantity);
-  if (recommendedQty !== finalQty) {
-    recordQuantityEdit(businessId, orderLine.product_id, recommendedQty, finalQty).catch(
-      (error) => {
-        // Log but don't fail the update if learning fails
-        console.error('Failed to record learning adjustment:', error);
-      }
-    );
-  }
+  // NOTE: Learning adjustments are only recorded when the order is approved,
+  // not during editing. This prevents accidental learning from exploratory edits.
 
   return updated;
 }
@@ -319,6 +320,39 @@ export async function approveOrder(businessId: string, orderId: string, userId: 
     before_snapshot: { status: order.status },
     after_snapshot: { status: 'approved', approved_at: updated.approved_at },
   });
+
+  // Record learning adjustments from approved order edits
+  // Only learn from edits that were made before approval
+  const { data: vendorOrders } = await supabaseAdmin
+    .from('vendor_orders')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('order_id', orderId);
+
+  if (vendorOrders && vendorOrders.length > 0) {
+    const vendorOrderIds = vendorOrders.map((vo) => vo.id);
+    const { data: allOrderLines } = await supabaseAdmin
+      .from('order_lines')
+      .select('product_id, recommended_quantity, final_quantity')
+      .eq('business_id', businessId)
+      .in('vendor_order_id', vendorOrderIds);
+
+    // Record learning for each line that was edited
+    if (allOrderLines) {
+      for (const line of allOrderLines) {
+        const recommendedQty = Number(line.recommended_quantity);
+        const finalQty = Number(line.final_quantity);
+        if (recommendedQty !== finalQty) {
+          recordQuantityEdit(businessId, line.product_id, recommendedQty, finalQty).catch(
+            (error) => {
+              // Log but don't fail approval if learning fails
+              console.error('Failed to record learning adjustment:', error);
+            }
+          );
+        }
+      }
+    }
+  }
 
   return updated;
 }

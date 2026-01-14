@@ -60,6 +60,19 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleConfidenceChange = async (lineId: string, confidenceLevel: 'high' | 'moderate' | 'needs_review') => {
+    if (!orderId) return;
+    try {
+      await updateLine.mutateAsync({
+        orderId,
+        lineId,
+        data: { confidenceLevel },
+      });
+    } catch (error) {
+      console.error('Failed to update confidence level:', error);
+    }
+  };
+
   const handleRemoveLine = async (lineId: string) => {
     if (!orderId) return;
     if (!confirm('Are you sure you want to remove this product from the order?')) return;
@@ -274,6 +287,7 @@ export default function OrderDetailPage() {
                         key={line.id}
                         line={line}
                         onQuantityChange={handleQuantityChange}
+                        onConfidenceChange={!isReadOnly ? handleConfidenceChange : undefined}
                         onRemove={!isReadOnly ? handleRemoveLine : undefined}
                         disabled={isReadOnly || updateLine.isPending || removeLine.isPending}
                       />

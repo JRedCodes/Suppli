@@ -116,21 +116,26 @@ export async function getOrderHandler(req: Request, res: Response): Promise<void
  * Update order line quantity
  * PATCH /api/v1/orders/:id/lines/:lineId
  */
-export async function updateOrderLineHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
-  const { finalQuantity } = req.body;
+export async function updateOrderLineHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
+    const { finalQuantity, confidenceLevel } = req.body;
 
-  const updated = await updateOrderLineQuantity(
-    authReq.businessId!,
-    id,
-    lineId,
-    finalQuantity,
-    authReq.userId!
-  );
+    const updated = await updateOrderLineQuantity(
+      authReq.businessId!,
+      id,
+      lineId,
+      finalQuantity,
+      confidenceLevel,
+      authReq.userId!
+    );
 
-  sendSuccess(res, updated);
+    sendSuccess(res, updated);
+  } catch (error) {
+    next(error);
+  }
 }
 
 /**

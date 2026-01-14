@@ -6,11 +6,12 @@ import type { OrderLine } from '../../services/orders.service';
 export interface OrderLineRowProps {
   line: OrderLine;
   onQuantityChange?: (lineId: string, quantity: number) => void;
+  onConfidenceChange?: (lineId: string, confidenceLevel: 'high' | 'moderate' | 'needs_review') => void;
   onRemove?: (lineId: string) => void;
   disabled?: boolean;
 }
 
-export function OrderLineRow({ line, onQuantityChange, onRemove, disabled }: OrderLineRowProps) {
+export function OrderLineRow({ line, onQuantityChange, onConfidenceChange, onRemove, disabled }: OrderLineRowProps) {
   const [editingQuantity, setEditingQuantity] = useState(false);
   const [quantity, setQuantity] = useState(line.final_quantity.toString());
 
@@ -131,7 +132,19 @@ export function OrderLineRow({ line, onQuantityChange, onRemove, disabled }: Ord
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <ConfidenceIndicator level={line.confidence_level} />
+        <div className="flex items-center space-x-2">
+          <ConfidenceIndicator level={line.confidence_level} />
+          {onConfidenceChange && line.confidence_level === 'needs_review' && (
+            <button
+              onClick={() => onConfidenceChange(line.id, 'moderate')}
+              disabled={disabled}
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium underline focus:outline-none"
+              title="Mark as reviewed"
+            >
+              Mark Reviewed
+            </button>
+          )}
+        </div>
       </td>
       <td className="px-6 py-4">
         <div className="text-sm text-gray-600">

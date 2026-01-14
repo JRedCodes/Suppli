@@ -1,4 +1,4 @@
-import { InputHTMLAttributes, TextareaHTMLAttributes, forwardRef } from 'react';
+import { InputHTMLAttributes, TextareaHTMLAttributes, forwardRef, useId } from 'react';
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -9,8 +9,9 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, required, className = '', id, ...props }, ref) => {
-    // Use a stable ID - prefer provided id, otherwise use a ref-based approach
-    const inputId = id || (props.name ? `input-${props.name}` : undefined);
+    // Use React's useId for stable ID generation, or provided id, or name-based fallback
+    const generatedId = useId();
+    const inputId = id || (props.name ? `input-${props.name}` : generatedId);
     const errorId = error ? `${inputId}-error` : undefined;
     const helperId = helperText ? `${inputId}-helper` : undefined;
 

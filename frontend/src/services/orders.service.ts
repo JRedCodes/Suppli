@@ -79,7 +79,8 @@ export interface OrdersPaginatedResponse<T> {
 }
 
 export interface UpdateOrderLineRequest {
-  finalQuantity: number;
+  finalQuantity?: number;
+  confidenceLevel?: 'high' | 'moderate' | 'needs_review';
 }
 
 export interface AddOrderLineRequest {
