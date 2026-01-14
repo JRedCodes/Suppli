@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine } from '../hooks/useOrders';
-import { useProducts } from '../hooks/useProducts';
+import { useProducts, useVendorProducts } from '../hooks/useProducts';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
@@ -421,9 +421,12 @@ export default function OrderDetailPage() {
                   <Input
                     type="text"
                     id="add-product-name"
+                    name="productName"
                     label="Product Name"
                     value={addProductForm.productName}
-                    onChange={(e) => setAddProductForm({ ...addProductForm, productName: e.target.value })}
+                    onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+                      setAddProductForm((prev) => ({ ...prev, productName: e.target.value }));
+                    }, [])}
                     placeholder="Enter product name"
                     disabled={addLine.isPending}
                     required
@@ -431,39 +434,44 @@ export default function OrderDetailPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className={addProductForm.useExisting ? '' : 'grid grid-cols-2 gap-4'}>
                 <div>
                   <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
                     Quantity
                   </label>
                   <Input
                     id="quantity"
+                    name="quantity"
                     type="number"
                     min="0.01"
                     step="0.01"
                     value={addProductForm.quantity}
-                    onChange={(e) => setAddProductForm({ ...addProductForm, quantity: e.target.value })}
+                    onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+                      setAddProductForm((prev) => ({ ...prev, quantity: e.target.value }));
+                    }, [])}
                     disabled={addLine.isPending}
                     required
                   />
                 </div>
-                <div>
-                  <label htmlFor="unitType" className="block text-sm font-medium text-gray-700 mb-1">
-                    Unit Type
-                  </label>
-                  <select
-                    id="unitType"
-                    value={addProductForm.unitType}
-                    onChange={(e) =>
-                      setAddProductForm({ ...addProductForm, unitType: e.target.value as 'case' | 'unit' })
-                    }
-                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                    disabled={addLine.isPending}
-                  >
-                    <option value="unit">Unit</option>
-                    <option value="case">Case</option>
-                  </select>
-                </div>
+                {!addProductForm.useExisting && (
+                  <div>
+                    <label htmlFor="unitType" className="block text-sm font-medium text-gray-700 mb-1">
+                      Unit Type
+                    </label>
+                    <select
+                      id="unitType"
+                      value={addProductForm.unitType}
+                      onChange={(e) =>
+                        setAddProductForm({ ...addProductForm, unitType: e.target.value as 'case' | 'unit' })
+                      }
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                      disabled={addLine.isPending}
+                    >
+                      <option value="unit">Unit</option>
+                      <option value="case">Case</option>
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </ModalBody>
