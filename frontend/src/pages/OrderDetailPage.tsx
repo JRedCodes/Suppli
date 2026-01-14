@@ -43,6 +43,7 @@ export default function OrderDetailPage() {
   const [draftData, setDraftData] = useState<{ recommendations: OrderGenerationResult; formData: GenerateOrderRequest } | null>(null);
   const [isDraftLoading, setIsDraftLoading] = useState(false);
   const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Load draft order on mount if it's a draft
@@ -356,6 +357,18 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!orderId || isDraft) return; // Don't delete drafts via API, use discard instead
+    try {
+      await deleteOrder.mutateAsync(orderId);
+      setShowDeleteModal(false);
+      navigate('/orders');
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+      alert(error instanceof Error ? error.message : 'Failed to delete order. Please try again.');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -381,6 +394,7 @@ export default function OrderDetailPage() {
 
   const canApprove = order.status === 'draft';
   const canSend = order.status === 'approved';
+  const canDelete = (order.status === 'draft' || order.status === 'cancelled') && !isDraft; // Don't show delete for localStorage drafts
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
 
   // Calculate summary stats
@@ -446,7 +460,7 @@ export default function OrderDetailPage() {
             )}
             {canDelete && (
               <Button
-                variant="error"
+                variant="destructive"
                 onClick={() => setShowDeleteModal(true)}
                 disabled={deleteOrder.isPending}
                 loading={deleteOrder.isPending}
@@ -621,6 +635,34 @@ export default function OrderDetailPage() {
           </Button>
           <Button onClick={handleSend} disabled={sendOrder.isPending} loading={sendOrder.isPending}>
             Mark as Sent
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Delete Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Order" size="md">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Are you sure you want to delete this order? This action cannot be undone. All order lines and vendor orders
+            will be permanently deleted.
+          </p>
+          {order.status === 'draft' && (
+            <Alert variant="warning" title="Draft Order">
+              This is a draft order. Deleting it will permanently remove all unsaved changes.
+            </Alert>
+          )}
+        </div>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={deleteOrder.isPending}
+            loading={deleteOrder.isPending}
+          >
+            Delete Order
           </Button>
         </ModalFooter>
       </Modal>
