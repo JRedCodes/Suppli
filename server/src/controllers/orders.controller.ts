@@ -93,6 +93,27 @@ export async function saveDraftOrderHandler(
 
     // If vendorOrders are provided, use them directly (from draft)
     if (vendorOrders && Array.isArray(vendorOrders) && vendorOrders.length > 0) {
+      // Fetch product names for order lines
+      const productIds = new Set<string>();
+      vendorOrders.forEach((vo: any) => {
+        vo.orderLines?.forEach((line: any) => {
+          if (line.productId) productIds.add(line.productId);
+        });
+      });
+
+      const productNamesMap = new Map<string, string>();
+      if (productIds.size > 0) {
+        const { data: products } = await supabaseAdmin
+          .from('products')
+          .select('id, name')
+          .in('id', Array.from(productIds))
+          .eq('business_id', authReq.businessId!);
+
+        products?.forEach((p: any) => {
+          productNamesMap.set(p.id, p.name);
+        });
+      }
+
       // Convert frontend format to OrderGenerationResult format
       generationResult = {
         vendorOrders: vendorOrders.map((vo: any) => ({
@@ -100,7 +121,7 @@ export async function saveDraftOrderHandler(
           vendorName: vo.vendorName,
           orderLines: vo.orderLines.map((line: any) => ({
             productId: line.productId,
-            productName: line.productName || '', // Will be fetched if needed
+            productName: productNamesMap.get(line.productId) || line.productName || '',
             recommendedQuantity: line.recommendedQuantity,
             finalQuantity: line.finalQuantity,
             unitType: line.unitType,
