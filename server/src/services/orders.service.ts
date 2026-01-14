@@ -183,13 +183,14 @@ export async function listOrders(
 }
 
 /**
- * Update order line quantity
+ * Update order line quantity and/or confidence level
  */
 export async function updateOrderLineQuantity(
   businessId: string,
   orderId: string,
   lineId: string,
-  finalQuantity: number,
+  finalQuantity: number | undefined,
+  confidenceLevel: 'high' | 'moderate' | 'needs_review' | undefined,
   userId: string
 ) {
   // Verify order line exists and belongs to business/order
