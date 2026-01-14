@@ -136,25 +136,29 @@ export async function saveDraftOrderHandler(
  * List orders
  * GET /api/v1/orders
  */
-export async function listOrdersHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const { status, vendorId, dateFrom, dateTo, page, pageSize } = req.query;
+export async function listOrdersHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const { status, vendorId, dateFrom, dateTo, page, pageSize } = req.query;
 
-  const result = await listOrders(authReq.businessId!, {
-    status: status as string | undefined,
-    vendorId: vendorId as string | undefined,
-    dateFrom: dateFrom as string | undefined,
-    dateTo: dateTo as string | undefined,
-    page: page ? Number(page) : undefined,
-    pageSize: pageSize ? Number(pageSize) : undefined,
-  });
+    const result = await listOrders(authReq.businessId!, {
+      status: status as string | undefined,
+      vendorId: vendorId as string | undefined,
+      dateFrom: dateFrom as string | undefined,
+      dateTo: dateTo as string | undefined,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
 
-  sendPaginated(res, result.orders, {
-    page: result.page,
-    pageSize: result.pageSize,
-    total: result.total,
-    totalPages: result.totalPages,
-  });
+    sendPaginated(res, result.orders, {
+      page: result.page,
+      pageSize: result.pageSize,
+      total: result.total,
+      totalPages: result.totalPages,
+    });
+  } catch (error) {
+    next(error);
+  }
 }
 
 /**
