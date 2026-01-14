@@ -69,7 +69,6 @@ export function useOrder(orderId: string | undefined) {
  * Hook to generate order recommendations (doesn't save to DB)
  */
 export function useGenerateOrder() {
-  const queryClient = useQueryClient();
   const { session } = useAuth();
   const { selectedBusinessId } = useBusiness();
 
@@ -224,6 +223,27 @@ export function useRemoveOrderLine() {
       // Invalidate the specific order to refetch with updated data
       queryClient.invalidateQueries({ queryKey: orderKeys.detail(variables.orderId) });
       // Also invalidate list to update summary counts
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to delete an order
+ */
+export function useDeleteOrder() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const { selectedBusinessId } = useBusiness();
+
+  return useMutation({
+    mutationFn: (orderId: string) =>
+      ordersService.delete(orderId, {
+        businessId: selectedBusinessId,
+        token: session?.access_token,
+      }),
+    onSuccess: () => {
+      // Invalidate orders list to remove deleted order
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
     },
   });

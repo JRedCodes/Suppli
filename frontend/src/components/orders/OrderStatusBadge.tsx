@@ -27,7 +27,9 @@ const statusConfig: Record<Order['status'], { label: string; variant: BadgeVaria
 
 export function OrderStatusBadge({ status, className = '' }: OrderStatusBadgeProps) {
   // Handle legacy 'needs_review' status by mapping it to 'draft'
-  const normalizedStatus = status === 'needs_review' ? 'draft' : status;
+  // Type assertion needed because status might come from API with legacy value
+  const statusString = status as string;
+  const normalizedStatus = (statusString === 'needs_review' ? 'draft' : status) as Order['status'];
   const config = statusConfig[normalizedStatus];
 
   // Fallback for unknown statuses

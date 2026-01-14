@@ -17,7 +17,6 @@ import {
   deleteDraftOrder,
   convertDraftToOrder,
   updateDraftOrderLine,
-  addDraftOrderLine,
   removeDraftOrderLine,
 } from '../utils/draft-orders';
 
@@ -35,8 +34,8 @@ export default function OrderDetailPage() {
   const { data: productsData } = useProducts({ archived: false });
 
   // Check if this is a draft order
-  const isDraft = orderId?.startsWith('draft-');
-  const draftKey = isDraft ? orderId.replace('draft-', '') : null;
+  const isDraft = orderId ? orderId.startsWith('draft-') : false;
+  const draftKey = isDraft && orderId ? orderId.replace('draft-', '') : null;
 
   // Load draft order from localStorage if it's a draft
   const [draftOrder, setDraftOrder] = useState<Order | null>(null);
@@ -44,7 +43,7 @@ export default function OrderDetailPage() {
   const [isDraftLoading, setIsDraftLoading] = useState(false);
   const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Load draft order on mount if it's a draft
   useEffect(() => {
