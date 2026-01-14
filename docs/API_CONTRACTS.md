@@ -436,7 +436,8 @@ List orders with optional filters and pagination.
 **Authentication:** Required (Staff, Manager, or Owner)
 
 **Query Parameters:**
-- `status` (optional): Filter by status (`draft`, `needs_review`, `approved`, `sent`, `cancelled`)
+- `status` (optional): Filter by status (`draft`, `approved`, `sent`, `cancelled`)
+  - Note: Legacy `needs_review` status is treated as `draft` for filtering
 - `vendorId` (optional): Filter by vendor ID
 - `dateFrom` (optional): Filter orders from date (YYYY-MM-DD)
 - `dateTo` (optional): Filter orders to date (YYYY-MM-DD)
@@ -550,11 +551,91 @@ Update the final quantity for a specific order line. Creates an audit event.
 
 ---
 
+### Save Draft Order
+
+**POST** `/api/v1/orders/draft`
+
+Save an order as a draft to the database. Accepts the full order structure including vendorOrders and orderLines. This endpoint is used after generating an order and making edits.
+
+**Authentication:** Required (Manager or Owner)
+
+**Request Body:**
+```json
+{
+  "orderPeriodStart": "2026-01-01",
+  "orderPeriodEnd": "2026-01-07",
+  "mode": "guided",
+  "vendorOrders": [
+    {
+      "vendorId": "uuid",
+      "vendorName": "Vendor Name",
+      "orderLines": [
+        {
+          "productId": "uuid",
+          "recommendedQuantity": 10.5,
+          "finalQuantity": 10.5,
+          "unitType": "unit",
+          "confidenceLevel": "high",
+          "explanation": "Based on recent sales data."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "totalProducts": 25,
+    "highConfidence": 10,
+    "moderateConfidence": 8,
+    "needsReview": 7
+  },
+  "orderId": "uuid" // Optional: for updating existing draft
+}
+```
+
+**Response:**
+```json
+{
+  "data": {
+    "orderId": "uuid",
+    "status": "draft",
+    "summary": {
+      "totalProducts": 25,
+      "highConfidence": 10,
+      "moderateConfidence": 8,
+      "needsReview": 7
+    }
+  }
+}
+```
+
+**Errors:**
+- `400 VALIDATION_ERROR` - Invalid request body
+- `401 UNAUTHORIZED` - Missing or invalid authentication
+
+---
+
+### Delete Order
+
+**DELETE** `/api/v1/orders/:id`
+
+Delete an order. Only allowed for orders with status `draft`, `cancelled`, or `approved`. Sent orders cannot be deleted.
+
+**Authentication:** Required (Manager or Owner)
+
+**Response:**
+- `204 No Content` on success
+
+**Errors:**
+- `404 NOT_FOUND` - Order not found
+- `400` - Cannot delete order with status `sent`
+- `403 FORBIDDEN` - Insufficient permissions
+
+---
+
 ### Approve Order
 
 **POST** `/api/v1/orders/:id/approve`
 
-Approve an order, changing status from `draft` or `needs_review` to `approved`.
+Approve an order, changing status from `draft` (or legacy `needs_review`) to `approved`.
 
 **Authentication:** Required (Manager or Owner)
 
@@ -605,16 +686,19 @@ Mark an order as sent, changing status from `approved` to `sent`.
 Orders follow this state flow:
 
 ```
-draft → needs_review → approved → sent
-  ↓                      ↓
-cancelled            cancelled
+draft → approved → sent
+  ↓         ↓
+cancelled cancelled
 ```
 
 **Rules:**
-- Orders start as `draft` (simulation mode) or `needs_review` (guided/full_auto)
-- Only `draft` or `needs_review` orders can be approved
+- Orders start as `draft` when generated (stored client-side) or saved via `/orders/draft`
+- Only `draft` orders can be approved (legacy `needs_review` status is treated as `draft`)
 - Only `approved` orders can be sent
+- Orders can be deleted if status is `draft`, `cancelled`, or `approved` (not `sent`)
 - Orders can be cancelled from any state (except `sent`)
+
+**Note:** The `needs_review` status has been removed as an order status. It is now only used for order line confidence levels. Legacy orders with `needs_review` status are treated as `draft` for all operations.
 
 ---
 

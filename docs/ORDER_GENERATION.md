@@ -289,6 +289,48 @@ The algorithm succeeds when:
 
 ---
 
+## Draft Order System
+
+### Overview
+Orders are generated client-side and stored in localStorage until explicitly saved or approved. This prevents database clutter from exploratory order generation and allows users to discard drafts without database operations.
+
+### Workflow
+1. **Generate Order** (`POST /api/v1/orders/generate`)
+   - Returns recommendations without saving to database
+   - Stored in browser localStorage with key: `suppli_draft_order_${businessId}_${timestamp}`
+   - User can edit quantities, add/remove products, change confidence levels
+
+2. **Save Draft** (`POST /api/v1/orders/draft`)
+   - Persists order to database with status `draft`
+   - Accepts full order structure (vendorOrders, orderLines, summary)
+   - Removes from localStorage after successful save
+   - Can be resumed and edited later
+
+3. **Approve Order** (`POST /api/v1/orders/:id/approve`)
+   - Changes status from `draft` to `approved`
+   - Triggers learning loop updates
+   - Order becomes ready to send
+
+4. **Discard Draft**
+   - Client-side operation: removes from localStorage
+   - No database operation needed
+   - Available for unsaved drafts only
+
+### Auto-Save
+- Draft orders auto-save to localStorage every 30 seconds while editing
+- Prevents data loss if user navigates away
+- Backend save requires explicit "Save Draft" action
+
+### Benefits
+- No database clutter from exploratory generation
+- Users can freely generate and compare multiple orders
+- Draft state persists across browser sessions (localStorage)
+- Clear separation between draft and approved orders
+
+---
+
 ## Summary
 
 Suppli's order generation algorithm prioritizes safety and explainability. It uses available data sources in priority order, applies conservative caps, and generates clear explanations for every recommendation. The system is designed to build trust through transparency and restraint.
+
+The draft order system ensures users can explore order options without cluttering the database, while maintaining full control over when orders are persisted and approved.
