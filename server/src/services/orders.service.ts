@@ -235,8 +235,15 @@ export async function listOrders(
   const { data: orders, error, count } = await query;
 
   if (error) {
+    console.error('Error listing orders:', error);
     throw new Error(`Failed to list orders: ${error.message}`);
   }
+
+  console.log(`[listOrders] Found ${count || 0} orders for business ${businessId}`, {
+    filters,
+    ordersReturned: orders?.length || 0,
+    total: count || 0,
+  });
 
   return {
     orders: orders || [],
