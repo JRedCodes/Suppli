@@ -2,14 +2,31 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGenerateOrder } from '../hooks/useOrders';
 import { useVendors } from '../hooks/useVendors';
+import { useBusiness } from '../hooks/useBusiness';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Alert } from '../components/ui/Alert';
-import type { GenerateOrderRequest } from '../services/orders.service';
+import type { GenerateOrderRequest, OrderGenerationResult } from '../services/orders.service';
+
+// Helper to save draft to localStorage
+function saveDraftToLocalStorage(
+  businessId: string,
+  draftKey: string,
+  recommendations: OrderGenerationResult,
+  formData: GenerateOrderRequest
+): void {
+  const draftData = {
+    recommendations,
+    formData,
+    timestamp: Date.now(),
+  };
+  localStorage.setItem(`draft_order_${businessId}_${draftKey}`, JSON.stringify(draftData));
+}
 
 export default function OrderGenerationPage() {
   const navigate = useNavigate();
   const generateOrder = useGenerateOrder();
+  const { selectedBusinessId } = useBusiness();
   const { data: vendorsData } = useVendors();
   const vendors = vendorsData?.data || [];
 
@@ -33,9 +50,15 @@ export default function OrderGenerationPage() {
         vendorIds: selectedVendors.length > 0 ? selectedVendors : undefined,
       });
 
-      // Navigate to the new order
-      if (result.orderId) {
-        navigate(`/orders/${result.orderId}`);
+      // Store recommendations in localStorage and navigate to draft view
+      if (result.recommendations && selectedBusinessId) {
+        const draftKey = Date.now().toString();
+        saveDraftToLocalStorage(selectedBusinessId, draftKey, result.recommendations, {
+          ...formData,
+          vendorIds: selectedVendors.length > 0 ? selectedVendors : undefined,
+        });
+        // Navigate to draft view using a special "draft" orderId
+        navigate(`/orders/draft-${draftKey}`);
       }
     } catch (error: unknown) {
       console.error('Failed to generate order:', error);
