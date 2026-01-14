@@ -9,6 +9,7 @@ import {
   ordersService,
   type OrderFilters,
   type GenerateOrderRequest,
+  type SaveDraftOrderRequest,
   type UpdateOrderLineRequest,
   type AddOrderLineRequest,
 } from '../services/orders.service';
@@ -65,7 +66,7 @@ export function useOrder(orderId: string | undefined) {
 }
 
 /**
- * Hook to generate a new order
+ * Hook to generate order recommendations (doesn't save to DB)
  */
 export function useGenerateOrder() {
   const queryClient = useQueryClient();
@@ -78,9 +79,29 @@ export function useGenerateOrder() {
         businessId: selectedBusinessId,
         token: session?.access_token,
       }),
-    onSuccess: () => {
-      // Invalidate orders list to refetch
+    // Don't invalidate queries since this doesn't create an order
+  });
+}
+
+/**
+ * Hook to save order as draft
+ */
+export function useSaveDraftOrder() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const { selectedBusinessId } = useBusiness();
+
+  return useMutation({
+    mutationFn: (data: SaveDraftOrderRequest) =>
+      ordersService.saveDraft(data, {
+        businessId: selectedBusinessId,
+        token: session?.access_token,
+      }),
+    onSuccess: (data) => {
+      // Invalidate orders list to show the new draft
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+      // Set the detail query with the new draft order
+      queryClient.setQueryData(orderKeys.detail(data.orderId), data);
     },
   });
 }

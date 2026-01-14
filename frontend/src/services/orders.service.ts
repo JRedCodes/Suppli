@@ -53,9 +53,42 @@ export interface GenerateOrderRequest {
   vendorIds?: string[];
 }
 
+// Order generation result (recommendations without orderId)
+export interface OrderGenerationResult {
+  orderId: string; // Empty string for new recommendations
+  vendorOrders: Array<{
+    vendorId: string;
+    vendorName: string;
+    orderLines: Array<{
+      productId: string;
+      recommendedQuantity: number;
+      finalQuantity: number;
+      unitType: 'case' | 'unit';
+      confidenceLevel: 'high' | 'moderate' | 'needs_review';
+      confidenceScore: number;
+      explanation: string;
+      adjustmentReason?: string;
+    }>;
+  }>;
+  summary: OrderSummary;
+}
+
 export interface GenerateOrderResponse {
+  recommendations: OrderGenerationResult;
+  summary: OrderSummary;
+}
+
+export interface SaveDraftOrderRequest {
+  orderPeriodStart: string;
+  orderPeriodEnd: string;
+  mode: 'guided' | 'full_auto' | 'simulation';
+  vendorIds?: string[];
+  orderId?: string; // Optional: for updating existing draft
+}
+
+export interface SaveDraftOrderResponse {
   orderId: string;
-  status: string;
+  status: 'draft';
   summary: OrderSummary;
 }
 
@@ -93,13 +126,23 @@ export interface AddOrderLineRequest {
 
 export const ordersService = {
   /**
-   * Generate a new order
+   * Generate order recommendations (doesn't save to DB)
    */
   generate: async (
     data: GenerateOrderRequest,
     options: RequestOptions
   ): Promise<GenerateOrderResponse> => {
     return apiPost<GenerateOrderResponse>('/orders/generate', data, options);
+  },
+
+  /**
+   * Save order as draft
+   */
+  saveDraft: async (
+    data: SaveDraftOrderRequest,
+    options: RequestOptions
+  ): Promise<SaveDraftOrderResponse> => {
+    return apiPost<SaveDraftOrderResponse>('/orders/draft', data, options);
   },
 
   /**
