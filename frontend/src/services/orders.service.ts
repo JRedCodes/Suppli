@@ -9,7 +9,7 @@ export interface Order {
   business_id: string;
   order_period_start: string;
   order_period_end: string;
-  status: 'draft' | 'needs_review' | 'approved' | 'sent' | 'cancelled';
+  status: 'draft' | 'approved' | 'sent' | 'cancelled';
   mode: 'guided' | 'full_auto' | 'simulation';
   created_at: string;
   approved_at?: string;

@@ -3,7 +3,7 @@
  */
 
 export type OrderMode = 'guided' | 'full_auto' | 'simulation';
-export type OrderStatus = 'draft' | 'needs_review' | 'approved' | 'sent' | 'cancelled';
+export type OrderStatus = 'draft' | 'approved' | 'sent' | 'cancelled';
 export type ConfidenceLevel = 'high' | 'moderate' | 'needs_review';
 export type UnitType = 'case' | 'unit';
 

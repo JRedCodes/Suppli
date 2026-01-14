@@ -378,7 +378,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const canApprove = order.status === 'needs_review' || order.status === 'draft';
+  const canApprove = order.status === 'draft';
   const canSend = order.status === 'approved';
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
 

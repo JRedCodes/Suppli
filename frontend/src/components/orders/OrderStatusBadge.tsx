@@ -11,10 +11,6 @@ const statusConfig: Record<Order['status'], { label: string; variant: BadgeVaria
     label: 'Draft',
     variant: 'default',
   },
-  needs_review: {
-    label: 'Needs review',
-    variant: 'warning',
-  },
   approved: {
     label: 'Approved',
     variant: 'success',

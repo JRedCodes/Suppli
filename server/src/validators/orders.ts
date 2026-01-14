@@ -24,7 +24,7 @@ export const generateOrderSchema = z
  * List orders query schema
  */
 export const listOrdersQuerySchema = z.object({
-  status: z.enum(['draft', 'needs_review', 'approved', 'sent', 'cancelled']).optional(),
+  status: z.enum(['draft', 'approved', 'sent', 'cancelled']).optional(),
   vendorId: uuidSchema.optional(),
   dateFrom: dateSchema.optional(),
   dateTo: dateSchema.optional(),

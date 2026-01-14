@@ -25,7 +25,7 @@ export async function createOrderFromGeneration(
       business_id: businessId,
       order_period_start: orderPeriodStart.toISOString().split('T')[0],
       order_period_end: orderPeriodEnd.toISOString().split('T')[0],
-      status: mode === 'simulation' ? 'draft' : 'needs_review',
+      status: 'draft',
       mode,
     })
     .select('id')
@@ -44,7 +44,7 @@ export async function createOrderFromGeneration(
     event_type: 'generated',
     actor_type: 'user',
     actor_id: userId,
-    after_snapshot: { mode, status: mode === 'simulation' ? 'draft' : 'needs_review' },
+    after_snapshot: { mode, status: 'draft' },
   });
 
   // Create vendor orders and order lines
@@ -363,7 +363,7 @@ export async function approveOrder(businessId: string, orderId: string, userId: 
     throw new NotFoundError('Order not found');
   }
 
-  if (order.status !== 'needs_review' && order.status !== 'draft') {
+  if (order.status !== 'draft') {
     throw new Error(`Cannot approve order with status: ${order.status}`);
   }
 

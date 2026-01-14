@@ -112,7 +112,7 @@ export default function OrdersListPage() {
       <div className="mb-4 flex items-center space-x-2">
         <span className="text-sm font-medium text-gray-700">Filter by status:</span>
         <div className="flex space-x-2">
-          {(['all', 'draft', 'needs_review', 'approved', 'sent', 'cancelled'] as const).map((status) => (
+          {(['all', 'draft', 'approved', 'sent', 'cancelled'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
