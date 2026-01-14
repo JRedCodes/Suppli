@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine } from '../hooks/useOrders';
 import { useProducts, useVendorProducts } from '../hooks/useProducts';
@@ -52,13 +52,13 @@ export default function OrderDetailPage() {
 
   // Update unit type when vendor product is loaded
   useEffect(() => {
-    if (addProductForm.useExisting && addProductForm.productId && vendorProductData?.data?.[0]) {
-      const vendorProduct = vendorProductData.data[0];
+    if (addProductForm.useExisting && addProductForm.productId && vendorProductData && vendorProductData.length > 0) {
+      const vendorProduct = vendorProductData[0];
       if (vendorProduct.unit_type !== addProductForm.unitType) {
         setAddProductForm((prev) => ({ ...prev, unitType: vendorProduct.unit_type }));
       }
     }
-  }, [addProductForm.useExisting, addProductForm.productId, vendorProductData]);
+  }, [addProductForm.useExisting, addProductForm.productId, vendorProductData, addProductForm.unitType]);
 
   // Stable handlers for form inputs
   const handleProductNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,8 +126,8 @@ export default function OrderDetailPage() {
 
       // For existing products, use the unit_type from vendor_product
       // For new products, use the selected unit_type
-      const unitType = addProductForm.useExisting && vendorProductData?.data?.[0]?.unit_type
-        ? vendorProductData.data[0].unit_type
+      const unitType = addProductForm.useExisting && vendorProductData && vendorProductData.length > 0
+        ? vendorProductData[0].unit_type
         : addProductForm.unitType;
 
       const request: AddOrderLineRequest = {
