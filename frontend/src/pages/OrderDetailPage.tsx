@@ -512,16 +512,7 @@ export default function OrderDetailPage() {
           <ModalFooter>
             <Button
               variant="secondary"
-              onClick={() => {
-                setShowAddProductModal(null);
-                setAddProductForm({
-                  productId: '',
-                  productName: '',
-                  quantity: '1',
-                  unitType: 'unit',
-                  useExisting: true,
-                });
-              }}
+              onClick={handleCloseAddProductModal}
               disabled={addLine.isPending}
             >
               Cancel
