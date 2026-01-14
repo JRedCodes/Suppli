@@ -17,6 +17,7 @@ import {
   addOrderLine,
   removeOrderLine,
 } from '../services/orders.service';
+import { supabaseAdmin } from '../lib/supabase';
 
 /**
  * Generate order recommendations (simulation only - doesn't save to DB)
