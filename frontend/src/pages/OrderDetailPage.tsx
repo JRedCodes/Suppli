@@ -393,10 +393,18 @@ export default function OrderDetailPage() {
 
   const canApprove = order.status === 'draft';
   const canSend = order.status === 'approved';
-  // Allow delete for draft or cancelled orders (not localStorage drafts - those use "Discard Draft")
-  // Also allow delete for approved orders (user might want to cancel/delete before sending)
-  const canDelete = (order.status === 'draft' || order.status === 'cancelled' || order.status === 'approved') && !isDraft;
+  // Allow delete for draft, cancelled, or approved orders (not localStorage drafts - those use "Discard Draft")
+  // Not allowed for sent orders
+  const canDelete = !isDraft && (order.status === 'draft' || order.status === 'cancelled' || order.status === 'approved');
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
+
+  // Debug: Log delete button visibility
+  console.log('OrderDetailPage - Delete button check:', {
+    orderStatus: order.status,
+    isDraft,
+    canDelete,
+    orderId,
+  });
 
   // Calculate summary stats
   const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + (vo.order_lines?.length || 0), 0) || 0;

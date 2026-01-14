@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useOrders } from '../hooks/useOrders';
+import { useOrders, useDeleteOrder } from '../hooks/useOrders';
 import { useVendors } from '../hooks/useVendors';
 import { Table, type TableColumn } from '../components/ui/Table';
 import { Button } from '../components/ui/Button';
@@ -8,18 +8,39 @@ import { Badge } from '../components/ui/Badge';
 import { Loading } from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Alert } from '../components/ui/Alert';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import type { Order } from '../services/orders.service';
 
 export default function OrdersListPage() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState<Order['status'] | 'all'>('all');
+  const [deleteOrderId, setDeleteOrderId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const deleteOrder = useDeleteOrder();
 
   const filters = statusFilter !== 'all' ? { status: statusFilter } : {};
   const { data, isLoading, error } = useOrders(filters);
   const { data: vendorsData, isLoading: vendorsLoading } = useVendors();
   const vendors = vendorsData?.data || [];
   const hasVendors = vendors.length > 0;
+
+  const handleDeleteClick = (e: React.MouseEvent, order: Order) => {
+    e.stopPropagation(); // Prevent row click navigation
+    setDeleteOrderId(order.id);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteOrderId) return;
+    try {
+      await deleteOrder.mutateAsync(deleteOrderId);
+      setShowDeleteModal(false);
+      setDeleteOrderId(null);
+    } catch (error) {
+      console.error('Failed to delete order:', error);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -57,6 +78,27 @@ export default function OrdersListPage() {
       header: 'Created',
       accessor: (order) => formatDate(order.created_at),
       sortable: true,
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      accessor: (order) => {
+        // Show delete button for draft, cancelled, or approved orders (not sent orders)
+        const canDelete = order.status === 'draft' || order.status === 'cancelled' || order.status === 'approved';
+        if (!canDelete) return null;
+        return (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={(e) => handleDeleteClick(e, order)}
+            disabled={deleteOrder.isPending}
+            loading={deleteOrder.isPending && deleteOrderId === order.id}
+          >
+            Delete
+          </Button>
+        );
+      },
+      className: 'w-24',
     },
   ];
 
@@ -166,6 +208,28 @@ export default function OrdersListPage() {
           Showing {orders.length} of {data.meta.total} orders
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Order" size="md">
+        <ModalBody>
+          <p className="text-gray-700">
+            Are you sure you want to delete this order? This action cannot be undone.
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowDeleteModal(false)} disabled={deleteOrder.isPending}>
+            Cancel
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteConfirm}
+            disabled={deleteOrder.isPending}
+            loading={deleteOrder.isPending}
+          >
+            Delete Order
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 }
