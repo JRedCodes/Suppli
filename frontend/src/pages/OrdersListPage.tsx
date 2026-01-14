@@ -85,6 +85,14 @@ export default function OrdersListPage() {
       accessor: (order) => {
         // Show delete button for draft, cancelled, or approved orders (not sent orders)
         const canDelete = order.status === 'draft' || order.status === 'cancelled' || order.status === 'approved';
+        // Debug logging
+        if (order.status === 'draft') {
+          console.log('OrdersListPage - Draft order delete check:', {
+            orderId: order.id,
+            status: order.status,
+            canDelete,
+          });
+        }
         if (!canDelete) return null;
         return (
           <Button

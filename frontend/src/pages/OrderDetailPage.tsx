@@ -398,12 +398,20 @@ export default function OrderDetailPage() {
   const canDelete = !isDraft && (order.status === 'draft' || order.status === 'cancelled' || order.status === 'approved');
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
 
-  // Debug: Log delete button visibility
+  // Debug: Log delete button visibility with detailed info
   console.log('OrderDetailPage - Delete button check:', {
-    orderStatus: order.status,
+    orderStatus: order?.status,
     isDraft,
     canDelete,
     orderId,
+    orderExists: !!order,
+    orderType: isDraft ? 'localStorage draft' : 'DB order',
+    statusCheck: {
+      isDraftStatus: order?.status === 'draft',
+      isCancelledStatus: order?.status === 'cancelled',
+      isApprovedStatus: order?.status === 'approved',
+      isSentStatus: order?.status === 'sent',
+    },
   });
 
   // Calculate summary stats
