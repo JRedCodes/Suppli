@@ -138,6 +138,75 @@ export async function listOrders(
     pageSize?: number;
   }
 ) {
+  // If filtering by vendorId, we need to join with vendor_orders
+  // Otherwise, we can use a simpler query
+  if (filters.vendorId) {
+    // Query orders that have vendor_orders with the specified vendor_id
+    const { data: vendorOrders, error: voError } = await supabaseAdmin
+      .from('vendor_orders')
+      .select('order_id')
+      .eq('business_id', businessId)
+      .eq('vendor_id', filters.vendorId);
+
+    if (voError) {
+      throw new Error(`Failed to filter orders by vendor: ${voError.message}`);
+    }
+
+    const orderIds = vendorOrders?.map((vo) => vo.order_id) || [];
+    
+    if (orderIds.length === 0) {
+      // No orders found for this vendor
+      return {
+        orders: [],
+        total: 0,
+        page: filters.page || 1,
+        pageSize: filters.pageSize || 25,
+        totalPages: 0,
+      };
+    }
+
+    let query = supabaseAdmin
+      .from('orders')
+      .select('*', { count: 'exact' })
+      .eq('business_id', businessId)
+      .in('id', orderIds)
+      .order('created_at', { ascending: false });
+
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    if (filters.dateFrom) {
+      query = query.gte('order_period_start', filters.dateFrom);
+    }
+
+    if (filters.dateTo) {
+      query = query.lte('order_period_end', filters.dateTo);
+    }
+
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 25;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    query = query.range(from, to);
+
+    const { data: orders, error, count } = await query;
+
+    if (error) {
+      throw new Error(`Failed to list orders: ${error.message}`);
+    }
+
+    return {
+      orders: orders || [],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  }
+
+  // Standard query without vendor filter
   let query = supabaseAdmin
     .from('orders')
     .select('*', { count: 'exact' })
@@ -154,10 +223,6 @@ export async function listOrders(
 
   if (filters.dateTo) {
     query = query.lte('order_period_end', filters.dateTo);
-  }
-
-  if (filters.vendorId) {
-    query = query.eq('vendor_orders.vendor_id', filters.vendorId);
   }
 
   const page = filters.page || 1;
