@@ -397,18 +397,20 @@ export default function OrderDetailPage() {
     );
   }
 
-  const canApprove = order.status === 'draft' || order.status === 'needs_review'; // Legacy status
-  const canSend = order.status === 'approved';
+  // Handle legacy 'needs_review' status
+  const orderStatus = order.status as Order['status'] | 'needs_review';
+  const canApprove = orderStatus === 'draft' || orderStatus === 'needs_review'; // Legacy status
+  const canSend = orderStatus === 'approved';
   // Allow delete for draft, needs_review (legacy), cancelled, or approved orders (not localStorage drafts - those use "Discard Draft")
   // Not allowed for sent orders
-  const statusStr = String(order?.status || '').trim();
+  const statusStr = String(orderStatus || '').trim();
   const canDelete =
     !isDraft &&
     (statusStr === 'draft' ||
       statusStr === 'needs_review' || // Legacy status, treat as draft
       statusStr === 'cancelled' ||
       statusStr === 'approved');
-  const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
+  const isReadOnly = orderStatus === 'sent' || orderStatus === 'cancelled';
 
   // Calculate summary stats
   const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + (vo.order_lines?.length || 0), 0) || 0;

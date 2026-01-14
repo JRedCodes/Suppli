@@ -158,9 +158,6 @@ export async function saveDraftOrderHandler(
       generationResult
     );
 
-    // Get the full order to return
-    const savedOrder = await getOrderById(authReq.businessId!, savedOrderId);
-
     sendSuccess(
       res,
       {
