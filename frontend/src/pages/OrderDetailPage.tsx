@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
 import { Alert } from '../components/ui/Alert';
-import { Modal, ModalBody, ModalFooter, ModalHeader } from '../components/ui/Modal';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderLineRow } from '../components/orders/OrderLineRow';
 import type { AddOrderLineRequest } from '../services/orders.service';
