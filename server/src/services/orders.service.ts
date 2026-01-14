@@ -451,10 +451,10 @@ export async function deleteOrder(businessId: string, orderId: string, userId: s
     throw new NotFoundError('Order not found');
   }
 
-  // Only allow deletion of draft or cancelled orders
-  if (order.status !== 'draft' && order.status !== 'cancelled') {
+  // Only allow deletion of draft, cancelled, or approved orders (not sent orders)
+  if (order.status !== 'draft' && order.status !== 'cancelled' && order.status !== 'approved') {
     throw new Error(
-      `Cannot delete order with status: ${order.status}. Only draft or cancelled orders can be deleted.`
+      `Cannot delete order with status: ${order.status}. Only draft, cancelled, or approved orders can be deleted.`
     );
   }
 
