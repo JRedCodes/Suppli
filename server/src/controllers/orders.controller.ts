@@ -81,7 +81,7 @@ export async function saveDraftOrderHandler(
 ): Promise<void> {
   try {
     const authReq = req as AuthRequest;
-    const { orderPeriodStart, orderPeriodEnd, mode, vendorIds, orderId } = req.body;
+    const { orderPeriodStart, orderPeriodEnd, mode, vendorOrders, summary, vendorIds, orderId } = req.body;
 
     // If orderId is provided, update existing draft
     if (orderId) {
@@ -89,14 +89,43 @@ export async function saveDraftOrderHandler(
       // For now, we'll create a new draft
     }
 
-    // Generate order recommendations
-    const generationResult = await generateOrder({
-      businessId: authReq.businessId!,
-      orderPeriodStart: new Date(orderPeriodStart),
-      orderPeriodEnd: new Date(orderPeriodEnd),
-      mode: mode || 'guided',
-      vendorIds,
-    });
+    let generationResult;
+
+    // If vendorOrders are provided, use them directly (from draft)
+    if (vendorOrders && Array.isArray(vendorOrders) && vendorOrders.length > 0) {
+      // Convert frontend format to OrderGenerationResult format
+      generationResult = {
+        vendorOrders: vendorOrders.map((vo: any) => ({
+          vendorId: vo.vendorId,
+          vendorName: vo.vendorName,
+          orderLines: vo.orderLines.map((line: any) => ({
+            productId: line.productId,
+            productName: line.productName || '', // Will be fetched if needed
+            recommendedQuantity: line.recommendedQuantity,
+            finalQuantity: line.finalQuantity,
+            unitType: line.unitType,
+            confidenceLevel: line.confidenceLevel,
+            explanation: line.explanation,
+            adjustmentReason: line.adjustmentReason,
+          })),
+        })),
+        summary: summary || {
+          totalProducts: vendorOrders.reduce((sum: number, vo: any) => sum + (vo.orderLines?.length || 0), 0),
+          highConfidence: 0,
+          moderateConfidence: 0,
+          needsReview: 0,
+        },
+      };
+    } else {
+      // Fallback: Generate order recommendations if vendorOrders not provided
+      generationResult = await generateOrder({
+        businessId: authReq.businessId!,
+        orderPeriodStart: new Date(orderPeriodStart),
+        orderPeriodEnd: new Date(orderPeriodEnd),
+        mode: mode || 'guided',
+        vendorIds,
+      });
+    }
 
     // Create order in database with 'draft' status
     const savedOrderId = await createOrderFromGeneration(
@@ -108,16 +137,8 @@ export async function saveDraftOrderHandler(
       generationResult
     );
 
-    // Update status to 'draft' explicitly
-    const { error: updateError } = await supabaseAdmin
-      .from('orders')
-      .update({ status: 'draft' })
-      .eq('id', savedOrderId)
-      .eq('business_id', authReq.businessId!);
-
-    if (updateError) {
-      throw new Error(`Failed to save draft: ${updateError.message}`);
-    }
+    // Get the full order to return
+    const savedOrder = await getOrderById(authReq.businessId!, savedOrderId);
 
     sendSuccess(
       res,

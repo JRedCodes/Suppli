@@ -77,18 +77,36 @@ export const addOrderLineSchema = z.object({
 /**
  * Save draft order schema
  */
-export const saveDraftOrderSchema = z
-  .object({
-    orderPeriodStart: dateSchema,
-    orderPeriodEnd: dateSchema,
-    mode: z.enum(['guided', 'full_auto', 'simulation']).default('guided'),
-    vendorIds: z.array(uuidSchema).optional(),
-    orderId: uuidSchema.optional(), // If provided, updates existing draft
-  })
-  .refine((data) => new Date(data.orderPeriodStart) <= new Date(data.orderPeriodEnd), {
-    message: 'orderPeriodStart must be before or equal to orderPeriodEnd',
-    path: ['orderPeriodEnd'],
-  });
+export const saveDraftOrderSchema = z.object({
+  orderPeriodStart: dateSchema,
+  orderPeriodEnd: dateSchema,
+  mode: z.enum(['guided', 'full_auto', 'simulation']).default('guided'),
+  vendorOrders: z.array(
+    z.object({
+      vendorId: uuidSchema,
+      vendorName: z.string(),
+      orderLines: z.array(
+        z.object({
+          productId: uuidSchema,
+          recommendedQuantity: z.number().nonnegative(),
+          finalQuantity: z.number().nonnegative(),
+          unitType: z.enum(['case', 'unit']),
+          confidenceLevel: z.enum(['high', 'moderate', 'needs_review']),
+          explanation: z.string(),
+          adjustmentReason: z.string().optional(),
+        })
+      ),
+    })
+  ),
+  summary: z.object({
+    totalProducts: z.number().nonnegative(),
+    highConfidence: z.number().nonnegative(),
+    moderateConfidence: z.number().nonnegative(),
+    needsReview: z.number().nonnegative(),
+  }),
+  orderId: uuidSchema.optional(), // If provided, updates existing draft
+  vendorIds: z.array(uuidSchema).optional(), // Legacy support - if vendorOrders not provided, will regenerate
+});
 
 /**
  * Remove order line schema (no body needed, just params)
