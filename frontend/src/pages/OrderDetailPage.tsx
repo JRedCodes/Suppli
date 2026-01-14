@@ -315,8 +315,11 @@ export default function OrderDetailPage() {
       if (draftKey) {
         deleteDraftOrder(selectedBusinessId, draftKey);
       }
-      // Navigate to the saved order
-      navigate(`/orders/${result.orderId}`);
+      // Wait a moment for the query to invalidate, then navigate to the saved order
+      // This ensures the order is refetched with full data
+      setTimeout(() => {
+        navigate(`/orders/${result.orderId}`);
+      }, 100);
     } catch (error) {
       console.error('Failed to save draft:', error);
       alert('Failed to save draft. Please try again.');

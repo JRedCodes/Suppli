@@ -99,8 +99,8 @@ export function useSaveDraftOrder() {
     onSuccess: (data) => {
       // Invalidate orders list to show the new draft
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
-      // Set the detail query with the new draft order
-      queryClient.setQueryData(orderKeys.detail(data.orderId), data);
+      // Invalidate the detail query so it refetches the full order data
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(data.orderId) });
     },
   });
 }
