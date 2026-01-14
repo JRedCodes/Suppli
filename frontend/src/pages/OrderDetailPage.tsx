@@ -38,6 +38,37 @@ export default function OrderDetailPage() {
     useExisting: true,
   });
 
+  // Get vendor_id from the selected vendor order
+  const selectedVendorOrder = useMemo(() => {
+    if (!showAddProductModal || !order?.vendor_orders) return null;
+    return order.vendor_orders.find((vo) => vo.id === showAddProductModal);
+  }, [showAddProductModal, order?.vendor_orders]);
+
+  // Fetch vendor product to get unit_type when an existing product is selected
+  const { data: vendorProductData } = useVendorProducts(
+    selectedVendorOrder?.vendor_id,
+    addProductForm.useExisting && addProductForm.productId ? addProductForm.productId : undefined
+  );
+
+  // Update unit type when vendor product is loaded
+  useEffect(() => {
+    if (addProductForm.useExisting && addProductForm.productId && vendorProductData?.data?.[0]) {
+      const vendorProduct = vendorProductData.data[0];
+      if (vendorProduct.unit_type !== addProductForm.unitType) {
+        setAddProductForm((prev) => ({ ...prev, unitType: vendorProduct.unit_type }));
+      }
+    }
+  }, [addProductForm.useExisting, addProductForm.productId, vendorProductData]);
+
+  // Stable handlers for form inputs
+  const handleProductNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddProductForm((prev) => ({ ...prev, productName: e.target.value }));
+  }, []);
+
+  const handleQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddProductForm((prev) => ({ ...prev, quantity: e.target.value }));
+  }, []);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
