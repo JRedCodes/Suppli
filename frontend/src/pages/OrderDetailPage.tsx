@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine } from '../hooks/useOrders';
+import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine, useSaveDraftOrder } from '../hooks/useOrders';
 import { useProducts, useVendorProducts } from '../hooks/useProducts';
+import { useBusiness } from '../hooks/useBusiness';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
@@ -9,18 +10,89 @@ import { Alert } from '../components/ui/Alert';
 import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderLineRow } from '../components/orders/OrderLineRow';
-import type { AddOrderLineRequest } from '../services/orders.service';
+import type { AddOrderLineRequest, Order, OrderGenerationResult, GenerateOrderRequest } from '../services/orders.service';
+import {
+  loadDraftOrder,
+  saveDraftOrder,
+  deleteDraftOrder,
+  convertDraftToOrder,
+  updateDraftOrderLine,
+  addDraftOrderLine,
+  removeDraftOrderLine,
+} from '../utils/draft-orders';
 
 export default function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const { data: order, isLoading, error } = useOrder(orderId);
+  const { selectedBusinessId } = useBusiness();
   const updateLine = useUpdateOrderLine();
   const approveOrder = useApproveOrder();
   const sendOrder = useSendOrder();
   const addLine = useAddOrderLine();
   const removeLine = useRemoveOrderLine();
+  const saveDraft = useSaveDraftOrder();
   const { data: productsData } = useProducts({ archived: false });
+
+  // Check if this is a draft order
+  const isDraft = orderId?.startsWith('draft-');
+  const draftKey = isDraft ? orderId.replace('draft-', '') : null;
+
+  // Load draft order from localStorage if it's a draft
+  const [draftOrder, setDraftOrder] = useState<Order | null>(null);
+  const [draftData, setDraftData] = useState<{ recommendations: OrderGenerationResult; formData: GenerateOrderRequest } | null>(null);
+  const [isDraftLoading, setIsDraftLoading] = useState(false);
+  const [showSaveDraftModal, setShowSaveDraftModal] = useState(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load draft order on mount if it's a draft
+  useEffect(() => {
+    if (isDraft && draftKey && selectedBusinessId) {
+      setIsDraftLoading(true);
+      const draft = loadDraftOrder(selectedBusinessId, draftKey);
+      if (draft) {
+        const convertedOrder = convertDraftToOrder(draft.recommendations, draft.formData, draftKey, selectedBusinessId);
+        setDraftOrder(convertedOrder);
+        setDraftData({ recommendations: draft.recommendations, formData: draft.formData });
+      } else {
+        // Draft not found, redirect to orders list
+        navigate('/orders');
+      }
+      setIsDraftLoading(false);
+    }
+  }, [isDraft, draftKey, selectedBusinessId, navigate]);
+
+  // Auto-save draft every 30 seconds
+  useEffect(() => {
+    if (isDraft && draftKey && selectedBusinessId && draftData) {
+      // Clear existing timer
+      if (autoSaveTimerRef.current) {
+        clearInterval(autoSaveTimerRef.current);
+      }
+
+      // Set up auto-save
+      autoSaveTimerRef.current = setInterval(() => {
+        if (draftData) {
+          saveDraftOrder(selectedBusinessId, draftKey, {
+            ...draftData,
+            timestamp: Date.now(),
+          });
+        }
+      }, 30000); // 30 seconds
+
+      return () => {
+        if (autoSaveTimerRef.current) {
+          clearInterval(autoSaveTimerRef.current);
+        }
+      };
+    }
+  }, [isDraft, draftKey, selectedBusinessId, draftData]);
+
+  // Load regular order from API if not a draft
+  const { data: dbOrder, isLoading: isDbLoading, error } = useOrder(isDraft ? undefined : orderId);
+
+  // Use draft order if it's a draft, otherwise use DB order
+  const order = isDraft ? draftOrder : dbOrder;
+  const isLoading = isDraft ? isDraftLoading : isDbLoading;
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState<string | null>(null); // vendorOrderId
@@ -90,40 +162,103 @@ export default function OrderDetailPage() {
     return `${formatDate(start)} - ${formatDate(end)}`;
   };
 
+  // Helper to find line indices from lineId (for drafts, lineId format: "draft-line-{draftKey}-{voIndex}-{lineIndex}")
+  const findLineIndices = (lineId: string): { vendorOrderIndex: number; lineIndex: number } | null => {
+    if (isDraft && draftKey) {
+      const match = lineId.match(/^draft-line-\d+-(\d+)-(\d+)$/);
+      if (match) {
+        return { vendorOrderIndex: parseInt(match[1], 10), lineIndex: parseInt(match[2], 10) };
+      }
+    }
+    return null;
+  };
+
   const handleQuantityChange = async (lineId: string, quantity: number) => {
-    if (!orderId) return;
-    try {
-      await updateLine.mutateAsync({
-        orderId,
-        lineId,
-        data: { finalQuantity: quantity },
-      });
-    } catch (error) {
-      console.error('Failed to update quantity:', error);
+    if (!orderId || !order) return;
+
+    if (isDraft && draftKey && selectedBusinessId) {
+      // Update draft in localStorage
+      const indices = findLineIndices(lineId);
+      if (indices) {
+        const updated = updateDraftOrderLine(selectedBusinessId, draftKey, indices.vendorOrderIndex, indices.lineIndex, {
+          finalQuantity: quantity,
+        });
+        if (updated) {
+          // Re-convert and update state
+          const convertedOrder = convertDraftToOrder(updated.recommendations, updated.formData, draftKey, selectedBusinessId);
+          setDraftOrder(convertedOrder);
+          setDraftData({ recommendations: updated.recommendations, formData: updated.formData });
+        }
+      }
+    } else {
+      // Update DB order via API
+      try {
+        await updateLine.mutateAsync({
+          orderId,
+          lineId,
+          data: { finalQuantity: quantity },
+        });
+      } catch (error) {
+        console.error('Failed to update quantity:', error);
+      }
     }
   };
 
   const handleConfidenceChange = async (lineId: string, confidenceLevel: 'high' | 'moderate' | 'needs_review') => {
-    if (!orderId) return;
-    try {
-      await updateLine.mutateAsync({
-        orderId,
-        lineId,
-        data: { confidenceLevel },
-      });
-    } catch (error) {
-      console.error('Failed to update confidence level:', error);
+    if (!orderId || !order) return;
+
+    if (isDraft && draftKey && selectedBusinessId) {
+      // Update draft in localStorage
+      const indices = findLineIndices(lineId);
+      if (indices) {
+        const updated = updateDraftOrderLine(selectedBusinessId, draftKey, indices.vendorOrderIndex, indices.lineIndex, {
+          confidenceLevel,
+        });
+        if (updated) {
+          // Re-convert and update state
+          const convertedOrder = convertDraftToOrder(updated.recommendations, updated.formData, draftKey, selectedBusinessId);
+          setDraftOrder(convertedOrder);
+          setDraftData({ recommendations: updated.recommendations, formData: updated.formData });
+        }
+      }
+    } else {
+      // Update DB order via API
+      try {
+        await updateLine.mutateAsync({
+          orderId,
+          lineId,
+          data: { confidenceLevel },
+        });
+      } catch (error) {
+        console.error('Failed to update confidence level:', error);
+      }
     }
   };
 
   const handleRemoveLine = async (lineId: string) => {
-    if (!orderId) return;
+    if (!orderId || !order) return;
     if (!confirm('Are you sure you want to remove this product from the order?')) return;
-    try {
-      await removeLine.mutateAsync({ orderId, lineId });
-    } catch (error) {
-      console.error('Failed to remove product:', error);
-      alert('Failed to remove product. Please try again.');
+
+    if (isDraft && draftKey && selectedBusinessId) {
+      // Remove from draft in localStorage
+      const indices = findLineIndices(lineId);
+      if (indices) {
+        const updated = removeDraftOrderLine(selectedBusinessId, draftKey, indices.vendorOrderIndex, indices.lineIndex);
+        if (updated) {
+          // Re-convert and update state
+          const convertedOrder = convertDraftToOrder(updated.recommendations, updated.formData, draftKey, selectedBusinessId);
+          setDraftOrder(convertedOrder);
+          setDraftData({ recommendations: updated.recommendations, formData: updated.formData });
+        }
+      }
+    } else {
+      // Remove from DB order via API
+      try {
+        await removeLine.mutateAsync({ orderId, lineId });
+      } catch (error) {
+        console.error('Failed to remove product:', error);
+        alert('Failed to remove product. Please try again.');
+      }
     }
   };
 
@@ -165,8 +300,43 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleSaveDraft = async () => {
+    if (!draftData || !selectedBusinessId) return;
+    try {
+      const result = await saveDraft.mutateAsync({
+        orderPeriodStart: draftData.formData.orderPeriodStart,
+        orderPeriodEnd: draftData.formData.orderPeriodEnd,
+        mode: draftData.formData.mode || 'guided',
+        vendorOrders: draftData.recommendations.vendorOrders,
+        summary: draftData.recommendations.summary,
+      });
+      // Delete from localStorage
+      if (draftKey) {
+        deleteDraftOrder(selectedBusinessId, draftKey);
+      }
+      // Navigate to the saved order
+      navigate(`/orders/${result.orderId}`);
+    } catch (error) {
+      console.error('Failed to save draft:', error);
+      alert('Failed to save draft. Please try again.');
+    }
+  };
+
+  const handleDiscardDraft = () => {
+    if (!confirm('Are you sure you want to discard this draft? This action cannot be undone.')) return;
+    if (draftKey && selectedBusinessId) {
+      deleteDraftOrder(selectedBusinessId, draftKey);
+      navigate('/orders');
+    }
+  };
+
   const handleApprove = async () => {
     if (!orderId) return;
+    // For drafts, must save first
+    if (isDraft) {
+      setShowSaveDraftModal(true);
+      return;
+    }
     try {
       await approveOrder.mutateAsync(orderId);
       setShowApproveModal(false);
@@ -240,7 +410,21 @@ export default function OrderDetailPage() {
             <Button variant="secondary" onClick={() => navigate('/orders')}>
               Back to Orders
             </Button>
-            {canApprove && (
+            {isDraft && (
+              <>
+                <Button variant="secondary" onClick={handleDiscardDraft}>
+                  Discard Draft
+                </Button>
+                <Button
+                  onClick={() => setShowSaveDraftModal(true)}
+                  disabled={saveDraft.isPending}
+                  loading={saveDraft.isPending}
+                >
+                  Save Draft
+                </Button>
+              </>
+            )}
+            {canApprove && !isDraft && (
               <Button
                 onClick={() => setShowApproveModal(true)}
                 disabled={approveOrder.isPending}
@@ -357,6 +541,28 @@ export default function OrderDetailPage() {
           This order doesn't have any items yet.
         </Alert>
       )}
+
+      {/* Save Draft Modal */}
+      <Modal
+        isOpen={showSaveDraftModal}
+        onClose={() => setShowSaveDraftModal(false)}
+        title="Save Draft Order"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Save this order as a draft? You can continue editing it later from the orders list.
+          </p>
+        </div>
+        <ModalFooter>
+          <Button variant="secondary" onClick={() => setShowSaveDraftModal(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSaveDraft} disabled={saveDraft.isPending} loading={saveDraft.isPending}>
+            Save Draft
+          </Button>
+        </ModalFooter>
+      </Modal>
 
       {/* Approve Modal */}
       <Modal

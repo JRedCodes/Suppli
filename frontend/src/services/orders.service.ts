@@ -79,11 +79,24 @@ export interface GenerateOrderResponse {
 }
 
 export interface SaveDraftOrderRequest {
+  orderId?: string; // Optional: for updating existing draft
   orderPeriodStart: string;
   orderPeriodEnd: string;
   mode: 'guided' | 'full_auto' | 'simulation';
-  vendorIds?: string[];
-  orderId?: string; // Optional: for updating existing draft
+  vendorOrders: Array<{
+    vendorId: string;
+    vendorName: string;
+    orderLines: Array<{
+      productId: string;
+      recommendedQuantity: number;
+      finalQuantity: number;
+      unitType: 'case' | 'unit';
+      confidenceLevel: 'high' | 'moderate' | 'needs_review';
+      explanation: string;
+      adjustmentReason?: string;
+    }>;
+  }>;
+  summary: OrderSummary;
 }
 
 export interface SaveDraftOrderResponse {
