@@ -19,8 +19,9 @@ import {
 } from '../services/orders.service';
 
 /**
- * Generate a new order
+ * Generate order recommendations (simulation only - doesn't save to DB)
  * POST /api/v1/orders/generate
+ * Returns order recommendations without persisting to database
  */
 export async function generateOrderHandler(
   req: Request,
@@ -31,33 +32,24 @@ export async function generateOrderHandler(
     const authReq = req as AuthRequest;
     const { orderPeriodStart, orderPeriodEnd, mode, vendorIds } = req.body;
 
-    // Generate order recommendations
+    // Generate order recommendations (simulation mode - doesn't save to DB)
     const generationResult = await generateOrder({
       businessId: authReq.businessId!,
       orderPeriodStart: new Date(orderPeriodStart),
       orderPeriodEnd: new Date(orderPeriodEnd),
-      mode: mode || 'guided',
+      mode: 'simulation', // Always use simulation mode for generation endpoint
       vendorIds,
     });
 
-    // Create order in database
-    const orderId = await createOrderFromGeneration(
-      authReq.businessId!,
-      authReq.userId!,
-      new Date(orderPeriodStart),
-      new Date(orderPeriodEnd),
-      mode || 'guided',
-      generationResult
-    );
-
+    // Return recommendations without saving to database
+    // User must explicitly save as draft or approve to persist
     sendSuccess(
       res,
       {
-        orderId,
-        status: mode === 'simulation' ? 'draft' : 'needs_review',
+        recommendations: generationResult,
         summary: generationResult.summary,
       },
-      201
+      200
     );
   } catch (error) {
     // Provide helpful error messages for common issues
@@ -71,6 +63,70 @@ export async function generateOrderHandler(
         return;
       }
     }
+    next(error);
+  }
+}
+
+/**
+ * Save order as draft
+ * POST /api/v1/orders/draft
+ * Saves an order to the database with status 'draft'
+ */
+export async function saveDraftOrderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const { orderPeriodStart, orderPeriodEnd, mode, vendorIds, orderId } = req.body;
+
+    // If orderId is provided, update existing draft
+    if (orderId) {
+      // TODO: Implement update draft functionality
+      // For now, we'll create a new draft
+    }
+
+    // Generate order recommendations
+    const generationResult = await generateOrder({
+      businessId: authReq.businessId!,
+      orderPeriodStart: new Date(orderPeriodStart),
+      orderPeriodEnd: new Date(orderPeriodEnd),
+      mode: mode || 'guided',
+      vendorIds,
+    });
+
+    // Create order in database with 'draft' status
+    const savedOrderId = await createOrderFromGeneration(
+      authReq.businessId!,
+      authReq.userId!,
+      new Date(orderPeriodStart),
+      new Date(orderPeriodEnd),
+      mode || 'guided',
+      generationResult
+    );
+
+    // Update status to 'draft' explicitly
+    const { error: updateError } = await supabaseAdmin
+      .from('orders')
+      .update({ status: 'draft' })
+      .eq('id', savedOrderId)
+      .eq('business_id', authReq.businessId!);
+
+    if (updateError) {
+      throw new Error(`Failed to save draft: ${updateError.message}`);
+    }
+
+    sendSuccess(
+      res,
+      {
+        orderId: savedOrderId,
+        status: 'draft',
+        summary: generationResult.summary,
+      },
+      201
+    );
+  } catch (error) {
     next(error);
   }
 }

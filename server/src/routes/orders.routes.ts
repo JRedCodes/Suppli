@@ -33,7 +33,7 @@ import {
 const router = Router();
 
 /**
- * Generate new order
+ * Generate order recommendations (simulation - doesn't save to DB)
  * POST /api/v1/orders/generate
  * Requires: Manager or Owner
  */
@@ -44,6 +44,20 @@ router.post(
   requireManager,
   validateBody(generateOrderSchema),
   generateOrderHandler
+);
+
+/**
+ * Save order as draft
+ * POST /api/v1/orders/draft
+ * Requires: Manager or Owner
+ */
+router.post(
+  '/draft',
+  verifyJWT,
+  resolveBusinessContext,
+  requireManager,
+  validateBody(saveDraftOrderSchema),
+  saveDraftOrderHandler
 );
 
 /**

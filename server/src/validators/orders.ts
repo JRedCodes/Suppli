@@ -75,5 +75,21 @@ export const addOrderLineSchema = z.object({
 });
 
 /**
+ * Save draft order schema
+ */
+export const saveDraftOrderSchema = z
+  .object({
+    orderPeriodStart: dateSchema,
+    orderPeriodEnd: dateSchema,
+    mode: z.enum(['guided', 'full_auto', 'simulation']).default('guided'),
+    vendorIds: z.array(uuidSchema).optional(),
+    orderId: uuidSchema.optional(), // If provided, updates existing draft
+  })
+  .refine((data) => new Date(data.orderPeriodStart) <= new Date(data.orderPeriodEnd), {
+    message: 'orderPeriodStart must be before or equal to orderPeriodEnd',
+    path: ['orderPeriodEnd'],
+  });
+
+/**
  * Remove order line schema (no body needed, just params)
  */
