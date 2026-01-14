@@ -84,16 +84,28 @@ export default function OrdersListPage() {
       header: 'Actions',
       accessor: (order) => {
         // Show delete button for draft, cancelled, or approved orders (not sent orders)
-        const canDelete = order.status === 'draft' || order.status === 'cancelled' || order.status === 'approved';
-        // Debug logging
-        if (order.status === 'draft') {
-          console.log('OrdersListPage - Draft order delete check:', {
-            orderId: order.id,
-            status: order.status,
-            canDelete,
-          });
+        const statusStr = String(order.status).trim();
+        const canDelete = statusStr === 'draft' || statusStr === 'cancelled' || statusStr === 'approved';
+        
+        // Debug logging for all orders
+        console.log('OrdersListPage - Delete button check:', {
+          orderId: order.id,
+          status: order.status,
+          statusStr,
+          statusType: typeof order.status,
+          canDelete,
+          statusChecks: {
+            isDraft: statusStr === 'draft',
+            isCancelled: statusStr === 'cancelled',
+            isApproved: statusStr === 'approved',
+            isSent: statusStr === 'sent',
+          },
+        });
+        
+        if (!canDelete) {
+          return <span className="text-gray-400 text-xs">-</span>;
         }
-        if (!canDelete) return null;
+        
         return (
           <Button
             variant="destructive"
