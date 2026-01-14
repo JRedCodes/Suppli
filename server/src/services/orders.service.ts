@@ -355,7 +355,9 @@ export async function approveOrder(businessId: string, orderId: string, userId: 
     }
   }
 
-  return updated;
+  // Return the full order with vendor_orders and order_lines (same structure as getOrderById)
+  // This ensures the frontend has all the data it needs
+  return getOrderById(businessId, orderId);
 }
 
 /**
