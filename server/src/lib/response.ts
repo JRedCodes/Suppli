@@ -11,6 +11,11 @@ import { paginationMetaSchema } from '../validators';
  * Standard success response with data
  */
 export function sendSuccess<T>(res: Response, data: T, statusCode: number = 200): void {
+  // For 204 No Content, send empty body
+  if (statusCode === 204) {
+    res.status(204).send();
+    return;
+  }
   res.status(statusCode).json({
     data,
   });
