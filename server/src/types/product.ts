@@ -4,6 +4,7 @@ export interface Product {
   name: string;
   category: string | null;
   waste_sensitive: boolean;
+  max_stock_amount: number | null;
   archived_at: string | null;
   created_at: string;
   updated_at: string | null;
@@ -13,12 +14,14 @@ export interface CreateProductData {
   name: string;
   category?: string;
   waste_sensitive?: boolean;
+  max_stock_amount?: number | null;
 }
 
 export interface UpdateProductData {
   name?: string;
   category?: string;
   waste_sensitive?: boolean;
+  max_stock_amount?: number | null;
   archived_at?: string | null;
 }
 

@@ -36,7 +36,8 @@ export const listOrdersQuerySchema = z.object({
  * Update order line quantity schema
  */
 export const updateOrderLineSchema = z.object({
-  finalQuantity: z.number().positive('Quantity must be greater than 0'),
+  finalQuantity: z.number().positive('Quantity must be greater than 0').optional(),
+  confidenceLevel: z.enum(['high', 'moderate', 'needs_review']).optional(),
 });
 
 /**
@@ -61,3 +62,34 @@ export const orderLineIdParamSchema = z.object({
   id: uuidSchema,
   lineId: uuidSchema,
 });
+
+/**
+ * Add order line schema
+ */
+export const addOrderLineSchema = z.object({
+  vendorOrderId: uuidSchema,
+  productId: uuidSchema.nullable().optional(), // null if creating new product
+  productName: z.string().min(1, 'Product name is required').max(255),
+  quantity: z.number().positive('Quantity must be greater than 0'),
+  unitType: z.enum(['case', 'unit']).default('unit'),
+});
+
+/**
+ * Save draft order schema
+ */
+export const saveDraftOrderSchema = z
+  .object({
+    orderPeriodStart: dateSchema,
+    orderPeriodEnd: dateSchema,
+    mode: z.enum(['guided', 'full_auto', 'simulation']).default('guided'),
+    vendorIds: z.array(uuidSchema).optional(),
+    orderId: uuidSchema.optional(), // If provided, updates existing draft
+  })
+  .refine((data) => new Date(data.orderPeriodStart) <= new Date(data.orderPeriodEnd), {
+    message: 'orderPeriodStart must be before or equal to orderPeriodEnd',
+    path: ['orderPeriodEnd'],
+  });
+
+/**
+ * Remove order line schema (no body needed, just params)
+ */

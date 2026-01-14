@@ -60,6 +60,7 @@ export interface ProductContext {
   productName: string;
   wasteSensitive: boolean;
   unitType: UnitType;
+  maxStockAmount?: number | null; // Optional upper limit safeguard
   salesData?: ProductSalesData;
   previousOrder?: PreviousOrderData;
   activePromotion?: PromotionData;

@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder } from '../hooks/useOrders';
+import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine } from '../hooks/useOrders';
+import { useProducts, useVendorProducts } from '../hooks/useProducts';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { Loading } from '../components/ui/Loading';
 import { Alert } from '../components/ui/Alert';
-import { Modal, ModalFooter } from '../components/ui/Modal';
+import { Modal, ModalBody, ModalFooter } from '../components/ui/Modal';
 import { OrderStatusBadge } from '../components/orders/OrderStatusBadge';
 import { OrderLineRow } from '../components/orders/OrderLineRow';
+import type { AddOrderLineRequest } from '../services/orders.service';
 
 export default function OrderDetailPage() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -15,8 +18,68 @@ export default function OrderDetailPage() {
   const updateLine = useUpdateOrderLine();
   const approveOrder = useApproveOrder();
   const sendOrder = useSendOrder();
+  const addLine = useAddOrderLine();
+  const removeLine = useRemoveOrderLine();
+  const { data: productsData } = useProducts({ archived: false });
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
+  const [showAddProductModal, setShowAddProductModal] = useState<string | null>(null); // vendorOrderId
+  const [addProductForm, setAddProductForm] = useState<{
+    productId: string;
+    productName: string;
+    quantity: string;
+    unitType: 'case' | 'unit';
+    useExisting: boolean;
+  }>({
+    productId: '',
+    productName: '',
+    quantity: '1',
+    unitType: 'unit',
+    useExisting: true,
+  });
+
+  // Get vendor_id from the selected vendor order
+  const selectedVendorOrder = useMemo(() => {
+    if (!showAddProductModal || !order?.vendor_orders) return null;
+    return order.vendor_orders.find((vo) => vo.id === showAddProductModal);
+  }, [showAddProductModal, order?.vendor_orders]);
+
+  // Fetch vendor product to get unit_type when an existing product is selected
+  const { data: vendorProductData } = useVendorProducts(
+    selectedVendorOrder?.vendor_id,
+    addProductForm.useExisting && addProductForm.productId ? addProductForm.productId : undefined
+  );
+
+  // Update unit type when vendor product is loaded
+  useEffect(() => {
+    if (addProductForm.useExisting && addProductForm.productId && vendorProductData && vendorProductData.length > 0) {
+      const vendorProduct = vendorProductData[0];
+      if (vendorProduct.unit_type !== addProductForm.unitType) {
+        setAddProductForm((prev) => ({ ...prev, unitType: vendorProduct.unit_type }));
+      }
+    }
+  }, [addProductForm.useExisting, addProductForm.productId, vendorProductData, addProductForm.unitType]);
+
+  // Stable handlers for form inputs
+  const handleProductNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddProductForm((prev) => ({ ...prev, productName: e.target.value }));
+  }, []);
+
+  const handleAddProductQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAddProductForm((prev) => ({ ...prev, quantity: e.target.value }));
+  }, []);
+
+  // Handler to close the add product modal
+  const handleCloseAddProductModal = useCallback(() => {
+    setShowAddProductModal(null);
+    setAddProductForm({
+      productId: '',
+      productName: '',
+      quantity: '1',
+      unitType: 'unit',
+      useExisting: true,
+    });
+  }, []);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -37,6 +100,68 @@ export default function OrderDetailPage() {
       });
     } catch (error) {
       console.error('Failed to update quantity:', error);
+    }
+  };
+
+  const handleConfidenceChange = async (lineId: string, confidenceLevel: 'high' | 'moderate' | 'needs_review') => {
+    if (!orderId) return;
+    try {
+      await updateLine.mutateAsync({
+        orderId,
+        lineId,
+        data: { confidenceLevel },
+      });
+    } catch (error) {
+      console.error('Failed to update confidence level:', error);
+    }
+  };
+
+  const handleRemoveLine = async (lineId: string) => {
+    if (!orderId) return;
+    if (!confirm('Are you sure you want to remove this product from the order?')) return;
+    try {
+      await removeLine.mutateAsync({ orderId, lineId });
+    } catch (error) {
+      console.error('Failed to remove product:', error);
+      alert('Failed to remove product. Please try again.');
+    }
+  };
+
+  const handleAddProduct = async (vendorOrderId: string) => {
+    if (!orderId) return;
+    try {
+      const quantity = parseFloat(addProductForm.quantity);
+      if (isNaN(quantity) || quantity <= 0) {
+        alert('Please enter a valid quantity greater than 0');
+        return;
+      }
+
+      // For existing products, use the unit_type from vendor_product
+      // For new products, use the selected unit_type
+      const unitType = addProductForm.useExisting && vendorProductData && vendorProductData.length > 0
+        ? vendorProductData[0].unit_type
+        : addProductForm.unitType;
+
+      const request: AddOrderLineRequest = {
+        vendorOrderId,
+        productName: addProductForm.productName.trim(),
+        quantity,
+        unitType,
+        productId: addProductForm.useExisting && addProductForm.productId ? addProductForm.productId : undefined,
+      };
+
+      await addLine.mutateAsync({ orderId, data: request });
+      setShowAddProductModal(null);
+      setAddProductForm({
+        productId: '',
+        productName: '',
+        quantity: '1',
+        unitType: 'unit',
+        useExisting: true,
+      });
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      alert(error instanceof Error ? error.message : 'Failed to add product. Please try again.');
     }
   };
 
@@ -88,10 +213,10 @@ export default function OrderDetailPage() {
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
 
   // Calculate summary stats
-  const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + vo.order_lines.length, 0) || 0;
+  const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + (vo.order_lines?.length || 0), 0) || 0;
   const needsReviewCount =
     order.vendor_orders?.reduce(
-      (sum, vo) => sum + vo.order_lines.filter((line) => line.confidence_level === 'needs_review').length,
+      (sum, vo) => sum + (vo.order_lines?.filter((line) => line.confidence_level === 'needs_review').length || 0),
       0
     ) || 0;
 
@@ -161,10 +286,20 @@ export default function OrderDetailPage() {
         <div className="space-y-6">
           {order.vendor_orders.map((vendorOrder) => (
             <div key={vendorOrder.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {vendorOrder.vendors?.name || 'Unknown Vendor'}
                 </h2>
+                {!isReadOnly && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowAddProductModal(vendorOrder.id)}
+                    disabled={addLine.isPending}
+                  >
+                    Add Product
+                  </Button>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -185,17 +320,32 @@ export default function OrderDetailPage() {
                       <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Explanation
                       </th>
+                      {!isReadOnly && (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {vendorOrder.order_lines.map((line) => (
-                      <OrderLineRow
-                        key={line.id}
-                        line={line}
-                        onQuantityChange={handleQuantityChange}
-                        disabled={isReadOnly || updateLine.isPending}
-                      />
-                    ))}
+                    {vendorOrder.order_lines && vendorOrder.order_lines.length > 0 ? (
+                      vendorOrder.order_lines.map((line) => (
+                        <OrderLineRow
+                          key={line.id}
+                          line={line}
+                          onQuantityChange={handleQuantityChange}
+                          onConfidenceChange={!isReadOnly ? handleConfidenceChange : undefined}
+                          onRemove={!isReadOnly ? handleRemoveLine : undefined}
+                          disabled={isReadOnly || updateLine.isPending || removeLine.isPending}
+                        />
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={isReadOnly ? 5 : 6} className="px-6 py-4 text-center text-sm text-gray-500">
+                          No products in this vendor's order
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -257,6 +407,138 @@ export default function OrderDetailPage() {
           </Button>
         </ModalFooter>
       </Modal>
+
+      {/* Add Product Modal */}
+      {showAddProductModal && (
+        <Modal
+          isOpen={!!showAddProductModal}
+          onClose={handleCloseAddProductModal}
+          title="Add Product to Order"
+          size="md"
+        >
+          <ModalBody>
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center space-x-2 mb-3">
+                  <input
+                    type="radio"
+                    checked={addProductForm.useExisting}
+                    onChange={() => setAddProductForm({ ...addProductForm, useExisting: true, productName: '' })}
+                    className="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Use existing product</span>
+                </label>
+                {addProductForm.useExisting && (
+                  <select
+                    value={addProductForm.productId}
+                    onChange={(e) => {
+                      const selectedProduct = productsData?.data.find((p) => p.id === e.target.value);
+                      setAddProductForm({
+                        ...addProductForm,
+                        productId: e.target.value,
+                        productName: selectedProduct?.name || '',
+                      });
+                    }}
+                    className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                    disabled={addLine.isPending}
+                  >
+                    <option value="">Select a product...</option>
+                    {productsData?.data.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label className="flex items-center space-x-2 mb-3">
+                  <input
+                    type="radio"
+                    checked={!addProductForm.useExisting}
+                    onChange={() => setAddProductForm({ ...addProductForm, useExisting: false, productId: '' })}
+                    className="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Create new product</span>
+                </label>
+                {!addProductForm.useExisting && (
+                  <Input
+                    type="text"
+                    id="add-product-name"
+                    name="productName"
+                    label="Product Name"
+                    value={addProductForm.productName}
+                    onChange={handleProductNameChange}
+                    placeholder="Enter product name"
+                    disabled={addLine.isPending}
+                    required
+                  />
+                )}
+              </div>
+
+              <div className={addProductForm.useExisting ? '' : 'grid grid-cols-2 gap-4'}>
+                <div>
+                  <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+                    Quantity
+                  </label>
+                  <Input
+                    key="add-product-quantity-input"
+                    id="quantity"
+                    name="quantity"
+                    type="number"
+                    min="0.01"
+                    step="0.01"
+                    value={addProductForm.quantity}
+                    onChange={handleAddProductQuantityChange}
+                    disabled={addLine.isPending}
+                    required
+                  />
+                </div>
+                {!addProductForm.useExisting && (
+                  <div>
+                    <label htmlFor="unitType" className="block text-sm font-medium text-gray-700 mb-1">
+                      Unit Type
+                    </label>
+                    <select
+                      id="unitType"
+                      value={addProductForm.unitType}
+                      onChange={(e) =>
+                        setAddProductForm({ ...addProductForm, unitType: e.target.value as 'case' | 'unit' })
+                      }
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                      disabled={addLine.isPending}
+                    >
+                      <option value="unit">Unit</option>
+                      <option value="case">Case</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="secondary"
+              onClick={handleCloseAddProductModal}
+              disabled={addLine.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => showAddProductModal && handleAddProduct(showAddProductModal)}
+              disabled={
+                addLine.isPending ||
+                (addProductForm.useExisting && !addProductForm.productId) ||
+                (!addProductForm.useExisting && !addProductForm.productName.trim())
+              }
+              loading={addLine.isPending}
+            >
+              Add Product
+            </Button>
+          </ModalFooter>
+        </Modal>
+      )}
     </div>
   );
 }

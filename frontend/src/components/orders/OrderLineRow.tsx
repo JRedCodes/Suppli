@@ -6,10 +6,12 @@ import type { OrderLine } from '../../services/orders.service';
 export interface OrderLineRowProps {
   line: OrderLine;
   onQuantityChange?: (lineId: string, quantity: number) => void;
+  onConfidenceChange?: (lineId: string, confidenceLevel: 'high' | 'moderate' | 'needs_review') => void;
+  onRemove?: (lineId: string) => void;
   disabled?: boolean;
 }
 
-export function OrderLineRow({ line, onQuantityChange, disabled }: OrderLineRowProps) {
+export function OrderLineRow({ line, onQuantityChange, onConfidenceChange, onRemove, disabled }: OrderLineRowProps) {
   const [editingQuantity, setEditingQuantity] = useState(false);
   const [quantity, setQuantity] = useState(line.final_quantity.toString());
 
@@ -49,66 +51,118 @@ export function OrderLineRow({ line, onQuantityChange, disabled }: OrderLineRowP
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           {editingQuantity ? (
-            <Input
-              type="number"
-              value={quantity}
-              onChange={handleQuantityChange}
-              onBlur={handleQuantityBlur}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleQuantityBlur();
-                } else if (e.key === 'Escape') {
+            <div className="flex items-center space-x-2">
+              <Input
+                type="number"
+                value={quantity}
+                onChange={handleQuantityChange}
+                onBlur={handleQuantityBlur}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleQuantityBlur();
+                  } else if (e.key === 'Escape') {
+                    setQuantity(line.final_quantity.toString());
+                    setEditingQuantity(false);
+                  }
+                }}
+                className="w-32"
+                disabled={disabled}
+                autoFocus
+              />
+              <span className="text-sm text-gray-500">{line.unit_type}</span>
+              <button
+                onClick={handleQuantityBlur}
+                disabled={disabled}
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
                   setQuantity(line.final_quantity.toString());
                   setEditingQuantity(false);
-                }
-              }}
-              className="w-24"
-              disabled={disabled}
-              autoFocus
-            />
+                }}
+                disabled={disabled}
+                className="text-xs text-gray-500 hover:text-gray-700"
+              >
+                Cancel
+              </button>
+            </div>
           ) : (
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-900">
+                  {line.final_quantity} {line.unit_type}
+                </span>
+                {hasChanged && (
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded ${
+                      changePercent > 20 || changePercent < -20
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {changePercent > 0 ? '+' : ''}
+                    {changePercent.toFixed(0)}%
+                  </span>
+                )}
+              </div>
               <button
                 onClick={() => setEditingQuantity(true)}
                 disabled={disabled}
-                className="text-sm text-gray-900 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded px-2 py-1"
+                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded px-2 py-1"
+                title="Click to edit quantity"
               >
-                {line.final_quantity} {line.unit_type}
+                Edit
               </button>
               {hasChanged && (
-                <span
-                  className={`text-xs ${
-                    changePercent > 20 || changePercent < -20 ? 'text-yellow-600' : 'text-gray-500'
-                  }`}
+                <button
+                  onClick={handleReset}
+                  disabled={disabled}
+                  className="text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+                  title="Reset to recommended quantity"
                 >
-                  ({changePercent > 0 ? '+' : ''}
-                  {changePercent.toFixed(0)}%)
-                </span>
+                  Reset
+                </button>
               )}
             </div>
-          )}
-          {hasChanged && (
-            <button
-              onClick={handleReset}
-              disabled={disabled}
-              className="text-xs text-indigo-600 hover:text-indigo-700 focus:outline-none"
-              title="Reset to recommended quantity"
-            >
-              Reset
-            </button>
           )}
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <ConfidenceIndicator level={line.confidence_level} />
+        <div className="flex items-center space-x-2">
+          <ConfidenceIndicator level={line.confidence_level} />
+          {onConfidenceChange && line.confidence_level === 'needs_review' && (
+            <button
+              onClick={() => onConfidenceChange(line.id, 'moderate')}
+              disabled={disabled}
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium underline focus:outline-none"
+              title="Mark as reviewed"
+            >
+              Mark Reviewed
+            </button>
+          )}
+        </div>
       </td>
       <td className="px-6 py-4">
         <div className="text-sm text-gray-600">
           {line.explanation || 'No explanation available'}
         </div>
       </td>
+      {onRemove && (
+        <td className="px-6 py-4 whitespace-nowrap">
+          <button
+            onClick={() => onRemove(line.id)}
+            disabled={disabled}
+            className="text-xs text-red-600 hover:text-red-700 font-medium focus:outline-none focus:ring-2 focus:ring-red-500 rounded px-2 py-1"
+            title="Remove product from order"
+          >
+            Remove
+          </button>
+        </td>
+      )}
     </tr>
   );
 }

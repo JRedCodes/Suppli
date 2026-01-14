@@ -14,11 +14,15 @@ import {
   updateOrderLineQuantity,
   approveOrder,
   sendOrder,
+  addOrderLine,
+  removeOrderLine,
 } from '../services/orders.service';
+import { supabaseAdmin } from '../lib/supabase';
 
 /**
- * Generate a new order
+ * Generate order recommendations (simulation only - doesn't save to DB)
  * POST /api/v1/orders/generate
+ * Returns order recommendations without persisting to database
  */
 export async function generateOrderHandler(
   req: Request,
@@ -27,35 +31,26 @@ export async function generateOrderHandler(
 ): Promise<void> {
   try {
     const authReq = req as AuthRequest;
-    const { orderPeriodStart, orderPeriodEnd, mode, vendorIds } = req.body;
+    const { orderPeriodStart, orderPeriodEnd, vendorIds } = req.body;
 
-    // Generate order recommendations
+    // Generate order recommendations (simulation mode - doesn't save to DB)
     const generationResult = await generateOrder({
       businessId: authReq.businessId!,
       orderPeriodStart: new Date(orderPeriodStart),
       orderPeriodEnd: new Date(orderPeriodEnd),
-      mode: mode || 'guided',
+      mode: 'simulation', // Always use simulation mode for generation endpoint
       vendorIds,
     });
 
-    // Create order in database
-    const orderId = await createOrderFromGeneration(
-      authReq.businessId!,
-      authReq.userId!,
-      new Date(orderPeriodStart),
-      new Date(orderPeriodEnd),
-      mode || 'guided',
-      generationResult
-    );
-
+    // Return recommendations without saving to database
+    // User must explicitly save as draft or approve to persist
     sendSuccess(
       res,
       {
-        orderId,
-        status: mode === 'simulation' ? 'draft' : 'needs_review',
+        recommendations: generationResult,
         summary: generationResult.summary,
       },
-      201
+      200
     );
   } catch (error) {
     // Provide helpful error messages for common issues
@@ -74,28 +69,96 @@ export async function generateOrderHandler(
 }
 
 /**
+ * Save order as draft
+ * POST /api/v1/orders/draft
+ * Saves an order to the database with status 'draft'
+ */
+export async function saveDraftOrderHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const { orderPeriodStart, orderPeriodEnd, mode, vendorIds, orderId } = req.body;
+
+    // If orderId is provided, update existing draft
+    if (orderId) {
+      // TODO: Implement update draft functionality
+      // For now, we'll create a new draft
+    }
+
+    // Generate order recommendations
+    const generationResult = await generateOrder({
+      businessId: authReq.businessId!,
+      orderPeriodStart: new Date(orderPeriodStart),
+      orderPeriodEnd: new Date(orderPeriodEnd),
+      mode: mode || 'guided',
+      vendorIds,
+    });
+
+    // Create order in database with 'draft' status
+    const savedOrderId = await createOrderFromGeneration(
+      authReq.businessId!,
+      authReq.userId!,
+      new Date(orderPeriodStart),
+      new Date(orderPeriodEnd),
+      mode || 'guided',
+      generationResult
+    );
+
+    // Update status to 'draft' explicitly
+    const { error: updateError } = await supabaseAdmin
+      .from('orders')
+      .update({ status: 'draft' })
+      .eq('id', savedOrderId)
+      .eq('business_id', authReq.businessId!);
+
+    if (updateError) {
+      throw new Error(`Failed to save draft: ${updateError.message}`);
+    }
+
+    sendSuccess(
+      res,
+      {
+        orderId: savedOrderId,
+        status: 'draft',
+        summary: generationResult.summary,
+      },
+      201
+    );
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * List orders
  * GET /api/v1/orders
  */
-export async function listOrdersHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const { status, vendorId, dateFrom, dateTo, page, pageSize } = req.query;
+export async function listOrdersHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const { status, vendorId, dateFrom, dateTo, page, pageSize } = req.query;
 
-  const result = await listOrders(authReq.businessId!, {
-    status: status as string | undefined,
-    vendorId: vendorId as string | undefined,
-    dateFrom: dateFrom as string | undefined,
-    dateTo: dateTo as string | undefined,
-    page: page ? Number(page) : undefined,
-    pageSize: pageSize ? Number(pageSize) : undefined,
-  });
+    const result = await listOrders(authReq.businessId!, {
+      status: status as string | undefined,
+      vendorId: vendorId as string | undefined,
+      dateFrom: dateFrom as string | undefined,
+      dateTo: dateTo as string | undefined,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+    });
 
-  sendPaginated(res, result.orders, {
-    page: result.page,
-    pageSize: result.pageSize,
-    total: result.total,
-    totalPages: result.totalPages,
-  });
+    sendPaginated(res, result.orders, {
+      page: result.page,
+      pageSize: result.pageSize,
+      total: result.total,
+      totalPages: result.totalPages,
+    });
+  } catch (error) {
+    next(error);
+  }
 }
 
 /**
@@ -114,21 +177,26 @@ export async function getOrderHandler(req: Request, res: Response): Promise<void
  * Update order line quantity
  * PATCH /api/v1/orders/:id/lines/:lineId
  */
-export async function updateOrderLineHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
-  const { finalQuantity } = req.body;
+export async function updateOrderLineHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
+    const { finalQuantity, confidenceLevel } = req.body;
 
-  const updated = await updateOrderLineQuantity(
-    authReq.businessId!,
-    id,
-    lineId,
-    finalQuantity,
-    authReq.userId!
-  );
+    const updated = await updateOrderLineQuantity(
+      authReq.businessId!,
+      id,
+      lineId,
+      finalQuantity,
+      confidenceLevel,
+      authReq.userId!
+    );
 
-  sendSuccess(res, updated);
+    sendSuccess(res, updated);
+  } catch (error) {
+    next(error);
+  }
 }
 
 /**
@@ -147,10 +215,57 @@ export async function approveOrderHandler(req: Request, res: Response): Promise<
  * Send order
  * POST /api/v1/orders/:id/send
  */
-export async function sendOrderHandler(req: Request, res: Response): Promise<void> {
-  const authReq = req as AuthRequest;
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+export async function sendOrderHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-  const order = await sendOrder(authReq.businessId!, id, authReq.userId!);
-  sendSuccess(res, order);
+    const order = await sendOrder(authReq.businessId!, id, authReq.userId!);
+    sendSuccess(res, order);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Add order line
+ * POST /api/v1/orders/:id/lines
+ */
+export async function addOrderLineHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { vendorOrderId, productId, productName, quantity, unitType } = req.body;
+
+    const newLine = await addOrderLine(
+      authReq.businessId!,
+      id,
+      vendorOrderId,
+      productId || null,
+      productName,
+      quantity,
+      unitType || 'unit',
+      authReq.userId!
+    );
+    sendSuccess(res, newLine, 201);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * Remove order line
+ * DELETE /api/v1/orders/:id/lines/:lineId
+ */
+export async function removeOrderLineHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const authReq = req as AuthRequest;
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const lineId = Array.isArray(req.params.lineId) ? req.params.lineId[0] : req.params.lineId;
+
+    await removeOrderLine(authReq.businessId!, id, lineId, authReq.userId!);
+    sendSuccess(res, null, 204);
+  } catch (error) {
+    next(error);
+  }
 }

@@ -13,24 +13,29 @@ import {
 } from '../middleware';
 import {
   generateOrderHandler,
+  saveDraftOrderHandler,
   listOrdersHandler,
   getOrderHandler,
   updateOrderLineHandler,
   approveOrderHandler,
   sendOrderHandler,
+  addOrderLineHandler,
+  removeOrderLineHandler,
 } from '../controllers/orders.controller';
 import {
   generateOrderSchema,
+  saveDraftOrderSchema,
   listOrdersQuerySchema,
   updateOrderLineSchema,
   orderIdParamSchema,
   orderLineIdParamSchema,
+  addOrderLineSchema,
 } from '../validators/orders';
 
 const router = Router();
 
 /**
- * Generate new order
+ * Generate order recommendations (simulation - doesn't save to DB)
  * POST /api/v1/orders/generate
  * Requires: Manager or Owner
  */
@@ -41,6 +46,20 @@ router.post(
   requireManager,
   validateBody(generateOrderSchema),
   generateOrderHandler
+);
+
+/**
+ * Save order as draft
+ * POST /api/v1/orders/draft
+ * Requires: Manager or Owner
+ */
+router.post(
+  '/draft',
+  verifyJWT,
+  resolveBusinessContext,
+  requireManager,
+  validateBody(saveDraftOrderSchema),
+  saveDraftOrderHandler
 );
 
 /**
@@ -70,6 +89,20 @@ router.get(
 );
 
 /**
+ * Add order line
+ * POST /api/v1/orders/:id/lines
+ * Requires: Staff, Manager, or Owner
+ */
+router.post(
+  '/:id/lines',
+  verifyJWT,
+  resolveBusinessContext,
+  validateParams(orderIdParamSchema),
+  validateBody(addOrderLineSchema),
+  addOrderLineHandler
+);
+
+/**
  * Update order line quantity
  * PATCH /api/v1/orders/:id/lines/:lineId
  * Requires: Staff, Manager, or Owner
@@ -81,6 +114,19 @@ router.patch(
   validateParams(orderLineIdParamSchema),
   validateBody(updateOrderLineSchema),
   updateOrderLineHandler
+);
+
+/**
+ * Remove order line
+ * DELETE /api/v1/orders/:id/lines/:lineId
+ * Requires: Staff, Manager, or Owner
+ */
+router.delete(
+  '/:id/lines/:lineId',
+  verifyJWT,
+  resolveBusinessContext,
+  validateParams(orderLineIdParamSchema),
+  removeOrderLineHandler
 );
 
 /**

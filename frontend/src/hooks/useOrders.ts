@@ -10,6 +10,7 @@ import {
   type OrderFilters,
   type GenerateOrderRequest,
   type UpdateOrderLineRequest,
+  type AddOrderLineRequest,
 } from '../services/orders.service';
 
 /**
@@ -156,6 +157,52 @@ export function useSendOrder() {
       // Update the detail query with the new data
       queryClient.setQueryData(orderKeys.detail(orderId), data);
       // Invalidate list to update status
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to add an order line
+ */
+export function useAddOrderLine() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const { selectedBusinessId } = useBusiness();
+
+  return useMutation({
+    mutationFn: ({ orderId, data }: { orderId: string; data: AddOrderLineRequest }) =>
+      ordersService.addLine(orderId, data, {
+        businessId: selectedBusinessId,
+        token: session?.access_token,
+      }),
+    onSuccess: (_, variables) => {
+      // Invalidate the specific order to refetch with updated data
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(variables.orderId) });
+      // Also invalidate list to update summary counts
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Hook to remove an order line
+ */
+export function useRemoveOrderLine() {
+  const queryClient = useQueryClient();
+  const { session } = useAuth();
+  const { selectedBusinessId } = useBusiness();
+
+  return useMutation({
+    mutationFn: ({ orderId, lineId }: { orderId: string; lineId: string }) =>
+      ordersService.removeLine(orderId, lineId, {
+        businessId: selectedBusinessId,
+        token: session?.access_token,
+      }),
+    onSuccess: (_, variables) => {
+      // Invalidate the specific order to refetch with updated data
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(variables.orderId) });
+      // Also invalidate list to update summary counts
       queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
     },
   });

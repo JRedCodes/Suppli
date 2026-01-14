@@ -139,8 +139,18 @@ export function calculateRecommendedQuantity(
   // Apply adjustment caps
   quantity = applyAdjustmentCaps(quantity, baseline, mode, confidenceScore, context.wasteSensitive);
 
-  // Round to 2 decimal places
-  quantity = Math.round(quantity * 100) / 100;
+  // Apply max stock amount safeguard if set
+  if (context.maxStockAmount !== null && context.maxStockAmount !== undefined) {
+    quantity = Math.min(quantity, context.maxStockAmount);
+  }
+
+  // Round quantity appropriately based on unit type
+  // Cases must be whole numbers, units can have 2 decimal places
+  if (context.unitType === 'case') {
+    quantity = Math.round(quantity); // Round to nearest whole number for cases
+  } else {
+    quantity = Math.round(quantity * 100) / 100; // Round to 2 decimal places for units
+  }
 
   // Generate explanation
   const explanation = generateExplanation(context, quantity, baseline, confidenceLevel);

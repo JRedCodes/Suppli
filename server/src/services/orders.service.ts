@@ -138,6 +138,75 @@ export async function listOrders(
     pageSize?: number;
   }
 ) {
+  // If filtering by vendorId, we need to join with vendor_orders
+  // Otherwise, we can use a simpler query
+  if (filters.vendorId) {
+    // Query orders that have vendor_orders with the specified vendor_id
+    const { data: vendorOrders, error: voError } = await supabaseAdmin
+      .from('vendor_orders')
+      .select('order_id')
+      .eq('business_id', businessId)
+      .eq('vendor_id', filters.vendorId);
+
+    if (voError) {
+      throw new Error(`Failed to filter orders by vendor: ${voError.message}`);
+    }
+
+    const orderIds = vendorOrders?.map((vo) => vo.order_id) || [];
+    
+    if (orderIds.length === 0) {
+      // No orders found for this vendor
+      return {
+        orders: [],
+        total: 0,
+        page: filters.page || 1,
+        pageSize: filters.pageSize || 25,
+        totalPages: 0,
+      };
+    }
+
+    let query = supabaseAdmin
+      .from('orders')
+      .select('*', { count: 'exact' })
+      .eq('business_id', businessId)
+      .in('id', orderIds)
+      .order('created_at', { ascending: false });
+
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+
+    if (filters.dateFrom) {
+      query = query.gte('order_period_start', filters.dateFrom);
+    }
+
+    if (filters.dateTo) {
+      query = query.lte('order_period_end', filters.dateTo);
+    }
+
+    const page = filters.page || 1;
+    const pageSize = filters.pageSize || 25;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    query = query.range(from, to);
+
+    const { data: orders, error, count } = await query;
+
+    if (error) {
+      throw new Error(`Failed to list orders: ${error.message}`);
+    }
+
+    return {
+      orders: orders || [],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  }
+
+  // Standard query without vendor filter
   let query = supabaseAdmin
     .from('orders')
     .select('*', { count: 'exact' })
@@ -156,10 +225,6 @@ export async function listOrders(
     query = query.lte('order_period_end', filters.dateTo);
   }
 
-  if (filters.vendorId) {
-    query = query.eq('vendor_orders.vendor_id', filters.vendorId);
-  }
-
   const page = filters.page || 1;
   const pageSize = filters.pageSize || 25;
   const from = (page - 1) * pageSize;
@@ -170,8 +235,15 @@ export async function listOrders(
   const { data: orders, error, count } = await query;
 
   if (error) {
+    console.error('Error listing orders:', error);
     throw new Error(`Failed to list orders: ${error.message}`);
   }
+
+  console.log(`[listOrders] Found ${count || 0} orders for business ${businessId}`, {
+    filters,
+    ordersReturned: orders?.length || 0,
+    total: count || 0,
+  });
 
   return {
     orders: orders || [],
@@ -183,13 +255,14 @@ export async function listOrders(
 }
 
 /**
- * Update order line quantity
+ * Update order line quantity and/or confidence level
  */
 export async function updateOrderLineQuantity(
   businessId: string,
   orderId: string,
   lineId: string,
-  finalQuantity: number,
+  finalQuantity: number | undefined,
+  confidenceLevel: 'high' | 'moderate' | 'needs_review' | undefined,
   userId: string
 ) {
   // Verify order line exists and belongs to business/order
@@ -229,12 +302,22 @@ export async function updateOrderLineQuantity(
   const beforeSnapshot = {
     recommended_quantity: orderLine.recommended_quantity,
     final_quantity: orderLine.final_quantity,
+    confidence_level: orderLine.confidence_level,
   };
+
+  // Build update payload
+  const updatePayload: { final_quantity?: number; confidence_level?: string } = {};
+  if (finalQuantity !== undefined) {
+    updatePayload.final_quantity = finalQuantity;
+  }
+  if (confidenceLevel !== undefined) {
+    updatePayload.confidence_level = confidenceLevel;
+  }
 
   // Update order line
   const { data: updated, error: updateError } = await supabaseAdmin
     .from('order_lines')
-    .update({ final_quantity: finalQuantity })
+    .update(updatePayload)
     .eq('id', lineId)
     .select()
     .single();
@@ -254,21 +337,12 @@ export async function updateOrderLineQuantity(
     after_snapshot: {
       recommended_quantity: updated.recommended_quantity,
       final_quantity: updated.final_quantity,
+      confidence_level: updated.confidence_level,
     },
   });
 
-  // Record learning from this edit (non-blocking)
-  // Only learn if the quantity actually changed
-  const recommendedQty = Number(orderLine.recommended_quantity);
-  const finalQty = Number(finalQuantity);
-  if (recommendedQty !== finalQty) {
-    recordQuantityEdit(businessId, orderLine.product_id, recommendedQty, finalQty).catch(
-      (error) => {
-        // Log but don't fail the update if learning fails
-        console.error('Failed to record learning adjustment:', error);
-      }
-    );
-  }
+  // NOTE: Learning adjustments are only recorded when the order is approved,
+  // not during editing. This prevents accidental learning from exploratory edits.
 
   return updated;
 }
@@ -320,7 +394,42 @@ export async function approveOrder(businessId: string, orderId: string, userId: 
     after_snapshot: { status: 'approved', approved_at: updated.approved_at },
   });
 
-  return updated;
+  // Record learning adjustments from approved order edits
+  // Only learn from edits that were made before approval
+  const { data: vendorOrders } = await supabaseAdmin
+    .from('vendor_orders')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('order_id', orderId);
+
+  if (vendorOrders && vendorOrders.length > 0) {
+    const vendorOrderIds = vendorOrders.map((vo) => vo.id);
+    const { data: allOrderLines } = await supabaseAdmin
+      .from('order_lines')
+      .select('product_id, recommended_quantity, final_quantity')
+      .eq('business_id', businessId)
+      .in('vendor_order_id', vendorOrderIds);
+
+    // Record learning for each line that was edited
+    if (allOrderLines) {
+      for (const line of allOrderLines) {
+        const recommendedQty = Number(line.recommended_quantity);
+        const finalQty = Number(line.final_quantity);
+        if (recommendedQty !== finalQty) {
+          recordQuantityEdit(businessId, line.product_id, recommendedQty, finalQty).catch(
+            (error) => {
+              // Log but don't fail approval if learning fails
+              console.error('Failed to record learning adjustment:', error);
+            }
+          );
+        }
+      }
+    }
+  }
+
+  // Return the full order with vendor_orders and order_lines (same structure as getOrderById)
+  // This ensures the frontend has all the data it needs
+  return getOrderById(businessId, orderId);
 }
 
 /**
@@ -368,5 +477,232 @@ export async function sendOrder(businessId: string, orderId: string, userId: str
     after_snapshot: { status: 'sent' },
   });
 
-  return updated;
+  // Return the full order with vendor_orders and order_lines (same structure as getOrderById)
+  // This ensures the frontend has all the data it needs
+  return getOrderById(businessId, orderId);
+}
+
+/**
+ * Add a new order line to an existing order
+ * Creates product if it doesn't exist, links to vendor if needed
+ */
+export async function addOrderLine(
+  businessId: string,
+  orderId: string,
+  vendorOrderId: string,
+  productId: string | null, // null if creating new product
+  productName: string, // Required if productId is null
+  quantity: number,
+  unitType: 'case' | 'unit',
+  userId: string
+) {
+  // Verify order exists and is editable
+  const { data: order, error: orderError } = await supabaseAdmin
+    .from('orders')
+    .select('*')
+    .eq('business_id', businessId)
+    .eq('id', orderId)
+    .single();
+
+  if (orderError || !order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  if (order.status === 'sent' || order.status === 'cancelled') {
+    throw new Error('Cannot add products to sent or cancelled order');
+  }
+
+  // Verify vendor order exists and belongs to this order
+  const { data: vendorOrder, error: voError } = await supabaseAdmin
+    .from('vendor_orders')
+    .select('*, vendors!inner(id, name)')
+    .eq('id', vendorOrderId)
+    .eq('business_id', businessId)
+    .eq('order_id', orderId)
+    .single();
+
+  if (voError || !vendorOrder) {
+    throw new NotFoundError('Vendor order not found');
+  }
+
+  let finalProductId = productId;
+
+  // Create product if it doesn't exist
+  if (!finalProductId) {
+    const { data: newProduct, error: createError } = await supabaseAdmin
+      .from('products')
+      .insert({
+        business_id: businessId,
+        name: productName,
+        waste_sensitive: false,
+      })
+      .select('id')
+      .single();
+
+    if (createError || !newProduct) {
+      throw new Error(`Failed to create product: ${createError?.message || 'Unknown error'}`);
+    }
+
+    finalProductId = newProduct.id;
+
+    // Link product to vendor if not already linked
+    const { data: existingLink } = await supabaseAdmin
+      .from('vendor_products')
+      .select('id')
+      .eq('business_id', businessId)
+      .eq('vendor_id', vendorOrder.vendor_id)
+      .eq('product_id', finalProductId)
+      .maybeSingle();
+
+    if (!existingLink) {
+      await supabaseAdmin.from('vendor_products').insert({
+        business_id: businessId,
+        vendor_id: vendorOrder.vendor_id,
+        product_id: finalProductId,
+        unit_type: unitType,
+      });
+    }
+  }
+
+  // Check if order line already exists for this product
+  const { data: existingLine } = await supabaseAdmin
+    .from('order_lines')
+    .select('id')
+    .eq('business_id', businessId)
+    .eq('vendor_order_id', vendorOrderId)
+    .eq('product_id', finalProductId)
+    .maybeSingle();
+
+  if (existingLine) {
+    throw new Error('This product is already in the order');
+  }
+
+  // Get product info for context
+  const { data: product } = await supabaseAdmin
+    .from('products')
+    .select('name, waste_sensitive, max_stock_amount')
+    .eq('id', finalProductId)
+    .single();
+
+  // Apply max stock safeguard if set
+  let finalQuantity = quantity;
+  if (product?.max_stock_amount !== null && product?.max_stock_amount !== undefined) {
+    finalQuantity = Math.min(quantity, product.max_stock_amount);
+  }
+
+  // Round quantity appropriately based on unit type
+  if (unitType === 'case') {
+    finalQuantity = Math.round(finalQuantity); // Cases must be whole numbers
+  } else {
+    finalQuantity = Math.round(finalQuantity * 100) / 100; // Units can have 2 decimal places
+  }
+
+  // Create order line with conservative confidence
+  const { data: newLine, error: lineError } = await supabaseAdmin
+    .from('order_lines')
+    .insert({
+      business_id: businessId,
+      vendor_order_id: vendorOrderId,
+      product_id: finalProductId,
+      recommended_quantity: finalQuantity,
+      final_quantity: finalQuantity,
+      unit_type: unitType,
+      confidence_level: 'needs_review',
+      explanation: `Manually added product${product?.max_stock_amount && quantity > product.max_stock_amount ? ` (capped at max stock: ${product.max_stock_amount})` : ''}`,
+    })
+    .select()
+    .single();
+
+  if (lineError || !newLine) {
+    throw new Error(`Failed to add order line: ${lineError?.message || 'Unknown error'}`);
+  }
+
+  // Create order event
+  await supabaseAdmin.from('order_events').insert({
+    business_id: businessId,
+    order_id: orderId,
+    event_type: 'edited',
+    actor_type: 'user',
+    actor_id: userId,
+    after_snapshot: {
+      action: 'added_line',
+      product_id: finalProductId,
+      product_name: productName,
+      quantity: finalQuantity,
+    },
+  });
+
+  return newLine;
+}
+
+/**
+ * Remove an order line from an order
+ */
+export async function removeOrderLine(
+  businessId: string,
+  orderId: string,
+  lineId: string,
+  userId: string
+) {
+  // Verify order line exists and belongs to business/order
+  const { data: orderLine, error: checkError } = await supabaseAdmin
+    .from('order_lines')
+    .select(
+      `
+      *,
+      vendor_orders!inner(
+        order_id,
+        orders!inner(
+          id,
+          business_id,
+          status
+        )
+      ),
+      products!inner(name)
+    `
+    )
+    .eq('id', lineId)
+    .eq('business_id', businessId)
+    .single();
+
+  if (checkError || !orderLine) {
+    throw new NotFoundError('Order line not found');
+  }
+
+  const order = (orderLine.vendor_orders as any)?.orders;
+  if (!order || order.id !== orderId || order.business_id !== businessId) {
+    throw new NotFoundError('Order line does not belong to this order');
+  }
+
+  if (order.status === 'sent' || order.status === 'cancelled') {
+    throw new Error('Cannot remove order line from sent or cancelled order');
+  }
+
+  // Get product name for event
+  const product = (orderLine.products as any);
+  const productName = product?.name || 'Unknown Product';
+
+  // Delete order line
+  const { error: deleteError } = await supabaseAdmin.from('order_lines').delete().eq('id', lineId);
+
+  if (deleteError) {
+    throw new Error(`Failed to remove order line: ${deleteError.message}`);
+  }
+
+  // Create order event
+  await supabaseAdmin.from('order_events').insert({
+    business_id: businessId,
+    order_id: orderId,
+    event_type: 'edited',
+    actor_type: 'user',
+    actor_id: userId,
+    before_snapshot: {
+      action: 'removed_line',
+      product_id: orderLine.product_id,
+      product_name: productName,
+      quantity: orderLine.final_quantity,
+    },
+  });
+
+  return { success: true };
 }

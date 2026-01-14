@@ -2,9 +2,10 @@ import { z } from 'zod';
 import { uuidSchema } from './common';
 
 export const createProductSchema = z.object({
-  name: z.string().min(1, 'Product name is required'),
-  category: z.string().optional().or(z.literal('')),
+  name: z.string().min(1, 'Product name is required').max(255, 'Product name is too long'),
+  category: z.string().max(255, 'Category is too long').optional().or(z.literal('')),
   waste_sensitive: z.boolean().default(false),
+  max_stock_amount: z.number().positive('Max stock amount must be positive').optional().nullable(),
 });
 
 export const updateProductSchema = createProductSchema.partial();
