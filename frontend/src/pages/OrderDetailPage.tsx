@@ -154,12 +154,15 @@ export default function OrderDetailPage() {
     });
   }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Invalid Date';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Invalid Date';
     return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   };
 
-  const formatDateRange = (start: string, end: string) => {
+  const formatDateRange = (start: string | undefined, end: string | undefined) => {
+    if (!start || !end) return 'Invalid Date - Invalid Date';
     return `${formatDate(start)} - ${formatDate(end)}`;
   };
 
