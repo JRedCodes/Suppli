@@ -391,32 +391,18 @@ export default function OrderDetailPage() {
     );
   }
 
-  const canApprove = order.status === 'draft';
+  const canApprove = order.status === 'draft' || order.status === 'needs_review'; // Legacy status
   const canSend = order.status === 'approved';
-  // Allow delete for draft, cancelled, or approved orders (not localStorage drafts - those use "Discard Draft")
+  // Allow delete for draft, needs_review (legacy), cancelled, or approved orders (not localStorage drafts - those use "Discard Draft")
   // Not allowed for sent orders
   const statusStr = String(order?.status || '').trim();
-  const canDelete = !isDraft && (statusStr === 'draft' || statusStr === 'cancelled' || statusStr === 'approved');
+  const canDelete =
+    !isDraft &&
+    (statusStr === 'draft' ||
+      statusStr === 'needs_review' || // Legacy status, treat as draft
+      statusStr === 'cancelled' ||
+      statusStr === 'approved');
   const isReadOnly = order.status === 'sent' || order.status === 'cancelled';
-
-  // Debug: Log delete button visibility with detailed info
-  console.log('OrderDetailPage - Delete button check:', {
-    orderStatus: order?.status,
-    statusStr,
-    statusType: typeof order?.status,
-    isDraft,
-    canDelete,
-    orderId,
-    orderExists: !!order,
-    orderType: isDraft ? 'localStorage draft' : 'DB order',
-    statusChecks: {
-      isDraftStatus: statusStr === 'draft',
-      isCancelledStatus: statusStr === 'cancelled',
-      isApprovedStatus: statusStr === 'approved',
-      isSentStatus: statusStr === 'sent',
-    },
-    fullOrder: order,
-  });
 
   // Calculate summary stats
   const totalLines = order.vendor_orders?.reduce((sum, vo) => sum + (vo.order_lines?.length || 0), 0) || 0;
