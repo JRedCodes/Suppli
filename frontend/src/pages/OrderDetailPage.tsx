@@ -65,7 +65,7 @@ export default function OrderDetailPage() {
     setAddProductForm((prev) => ({ ...prev, productName: e.target.value }));
   }, []);
 
-  const handleQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddProductQuantityChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setAddProductForm((prev) => ({ ...prev, quantity: e.target.value }));
   }, []);
 
@@ -478,7 +478,7 @@ export default function OrderDetailPage() {
                     min="0.01"
                     step="0.01"
                     value={addProductForm.quantity}
-                    onChange={handleQuantityChange}
+                    onChange={handleAddProductQuantityChange}
                     disabled={addLine.isPending}
                     required
                   />
