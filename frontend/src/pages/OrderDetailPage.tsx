@@ -424,9 +424,7 @@ export default function OrderDetailPage() {
                     name="productName"
                     label="Product Name"
                     value={addProductForm.productName}
-                    onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-                      setAddProductForm((prev) => ({ ...prev, productName: e.target.value }));
-                    }, [])}
+                    onChange={handleProductNameChange}
                     placeholder="Enter product name"
                     disabled={addLine.isPending}
                     required
@@ -446,9 +444,7 @@ export default function OrderDetailPage() {
                     min="0.01"
                     step="0.01"
                     value={addProductForm.quantity}
-                    onChange={useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-                      setAddProductForm((prev) => ({ ...prev, quantity: e.target.value }));
-                    }, [])}
+                    onChange={handleQuantityChange}
                     disabled={addLine.isPending}
                     required
                   />
