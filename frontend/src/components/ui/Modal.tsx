@@ -34,15 +34,21 @@ export function Modal({
     // Store the previously focused element
     previousActiveElement.current = document.activeElement as HTMLElement;
 
-    // Focus the modal
+    // Focus the modal - but only if no input is already focused
+    // This prevents stealing focus from inputs that are being typed into
     const modal = modalRef.current;
-    if (modal) {
+    if (modal && !modal.contains(document.activeElement)) {
       const focusableElements = modal.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
       const firstElement = focusableElements[0];
       if (firstElement) {
-        firstElement.focus();
+        // Use setTimeout to ensure this happens after any state updates
+        setTimeout(() => {
+          if (!modal.contains(document.activeElement)) {
+            firstElement.focus();
+          }
+        }, 0);
       }
     }
 

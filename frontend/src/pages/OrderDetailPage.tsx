@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOrder, useUpdateOrderLine, useApproveOrder, useSendOrder, useAddOrderLine, useRemoveOrderLine } from '../hooks/useOrders';
 import { useProducts, useVendorProducts } from '../hooks/useProducts';
@@ -472,6 +472,7 @@ export default function OrderDetailPage() {
                     Quantity
                   </label>
                   <Input
+                    key="add-product-quantity-input"
                     id="quantity"
                     name="quantity"
                     type="number"

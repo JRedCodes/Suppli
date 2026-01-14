@@ -8,10 +8,11 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, helperText, required, className = '', id, ...props }, ref) => {
-    // Use React's useId for stable ID generation, or provided id, or name-based fallback
+  ({ label, error, helperText, required, className = '', id, name, ...props }, ref) => {
+    // Use provided id, or name-based fallback, or generate stable ID
+    // Only call useId if we don't have id or name (React hooks must be called unconditionally)
     const generatedId = useId();
-    const inputId = id || (props.name ? `input-${props.name}` : generatedId);
+    const inputId = id || (name ? `input-${name}` : generatedId);
     const errorId = error ? `${inputId}-error` : undefined;
     const helperId = helperText ? `${inputId}-helper` : undefined;
 
