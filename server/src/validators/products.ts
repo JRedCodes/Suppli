@@ -47,3 +47,8 @@ export const updateVendorProductSchema = z.object({
 export const vendorProductIdParamSchema = z.object({
   vendorProductId: uuidSchema,
 });
+
+export const listVendorProductsQuerySchema = z.object({
+  vendorId: uuidSchema.optional(),
+  productId: uuidSchema.optional(),
+});

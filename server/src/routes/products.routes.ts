@@ -26,6 +26,7 @@ import {
   createVendorProductSchema,
   updateVendorProductSchema,
   vendorProductIdParamSchema,
+  listVendorProductsQuerySchema,
 } from '../validators/products';
 
 const router = Router();
@@ -109,6 +110,7 @@ router.get(
   '/vendor-products',
   verifyJWT,
   resolveBusinessContext,
+  validateQuery(listVendorProductsQuerySchema),
   listVendorProductsHandler
 );
 
