@@ -31,7 +31,7 @@ export async function generateOrderHandler(
 ): Promise<void> {
   try {
     const authReq = req as AuthRequest;
-    const { orderPeriodStart, orderPeriodEnd, mode, vendorIds } = req.body;
+    const { orderPeriodStart, orderPeriodEnd, vendorIds } = req.body;
 
     // Generate order recommendations (simulation mode - doesn't save to DB)
     const generationResult = await generateOrder({

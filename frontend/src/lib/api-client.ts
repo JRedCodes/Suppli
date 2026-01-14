@@ -75,7 +75,7 @@ export async function apiRequest<T>(
     if (hasJsonContent) {
       try {
         data = await response.json();
-      } catch (e) {
+      } catch {
         // If JSON parsing fails, return undefined
         if (response.ok) {
           return undefined as T;

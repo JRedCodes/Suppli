@@ -117,7 +117,8 @@ export function Modal({
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen]); // Remove onClose from dependencies - it shouldn't cause re-runs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]); // onClose is intentionally excluded - it's typically stable and re-registering listeners on every change would be inefficient
 
   if (!isOpen) return null;
 
