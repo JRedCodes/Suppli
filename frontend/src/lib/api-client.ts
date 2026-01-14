@@ -110,6 +110,15 @@ export async function apiRequest<T>(
     if (data === null || data === undefined) {
       return undefined as T;
     }
+    
+    // For paginated responses, return the full object { data: [...], meta: {...} }
+    // For regular responses, return just the data field
+    // Check if response has both 'data' and 'meta' (paginated response)
+    if (data.data !== undefined && data.meta !== undefined) {
+      return data as T;
+    }
+    
+    // Otherwise, return just the data field (standard response)
     return data.data as T;
   } catch (error) {
     if (error instanceof ApiClientError) {
